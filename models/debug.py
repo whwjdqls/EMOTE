@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from TVAE import TransformerEncoder,TransformerDecoder
+from TVAE import TransformerEncoder,TransformerDecoder, TVAE
 import json
 
 class TempDownsampleConvBlock(nn.Module):
@@ -42,11 +42,18 @@ if __name__ =="__main__":
     T = 32
     input = torch.randn(BS, T , 53)
 
-    config = json.load(open('C:\\Users\\jungbin.cho\\code\\EMOTE\\configs\\FLINT\\FLINT_V1.json'))
+    # config = json.load(open('C:\\Users\\jungbin.cho\\code\\EMOTE\\configs\\FLINT\\FLINT_V1.json'))
+    config = json.load(open('../configs/FLINT/FLINT_V1.json'))
     model = TransformerEncoder(config)
     output = model(input)
     print(output.shape)
     
-    model = TransformerDecoder(config, out_dim=128)
-    output = model(input)
+    model = TransformerDecoder(config, out_dim=53)
+    output = model(output)
     print(output.shape)
+    
+    model = TVAE(config)
+    output, mu, logvar = model(input)
+    print(output.shape)
+    print(mu.shape)
+    print(logvar.shape)
