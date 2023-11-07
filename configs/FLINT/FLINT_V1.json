@@ -9,7 +9,10 @@
     "num_epochs": 5000000,
     "batch_size": 32,
     "log_step": 100,
-
+    "data":{
+    "data_dir" : "/home/whwjdqls99/testfolder/data",
+    "window_size" : 32
+    },
     "transformer_config":{
       "in_dim": 53, 
       "hidden_size": 128, 

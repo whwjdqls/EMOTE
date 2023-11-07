@@ -6,8 +6,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from quantizer import VectorQuantizer
-from base_models import Transformer, PositionEmbedding,\
+from .quantizer import VectorQuantizer
+from .base_models import Transformer, PositionEmbedding,\
                                 LinearEmbedding
 class VQVAE(nn.Module):
     """ VQ-VAE for motion prior learning 

@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-from base_model_util import *
+from .base_model_util import *
 
 class Norm(nn.Module):
   """ Norm Layer """
