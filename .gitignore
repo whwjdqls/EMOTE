@@ -1,0 +1,20 @@
+# Ignore compiled files
+*.log
+*.tmp
+debugg.py
+*.out
+./checkpoints/
+*.png
+*.sh
+./wandb/
+# Ignore IDE-specific files and directories
+.idea/
+.vscode/
+*.ipynb
+*.pyc
+__pycache__/
+__pycache__
+debugg_jb.py
+# Ignore system-specific files
+Thumbs.db
+.DS_Store

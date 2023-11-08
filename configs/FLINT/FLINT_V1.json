@@ -3,15 +3,31 @@
     "tag": "l2_32_smoothSS_",
     "who": "listener",
     "segment_tag": "",
-    "learning_rate": 2.0,
+    
     "warmup_steps": 100000,
     "model_path": "models/",
-    "num_epochs": 5000000,
-    "batch_size": 32,
-    "log_step": 100,
+    
+    
+
+    "training": {
+      "lr": 0.0001,
+      "batch_size": 1,
+      "num_epochs": 100,
+      "log_step": 10
+    },
+      
     "data":{
-    "data_dir" : "/home/whwjdqls99/testfolder/data",
-    "window_size" : 32
+      "data_dir" : "/home/whwjdqls99/testfolder/data",
+      "window_size" : 32
+    },
+    "flame_config":{
+      "use_face_contour": true,
+      "shape_params" : 100,
+      "expression_params" : 50,
+      "use_3D_translation" : true,
+      "static_landmark_embedding_path" : "/home/whwjdqls99/EMOTE/models/flame_models/flame_static_embedding.pkl",
+      "dynamic_landmark_embedding_path" : "/home/whwjdqls99/EMOTE/models/flame_models/flame_dynamic_embedding.npy",
+      "flame_model_path" : "/home/whwjdqls99/EMOTE/models/flame_models/generic_model.pkl"
     },
     "transformer_config":{
       "in_dim": 53, 

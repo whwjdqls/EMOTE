@@ -9,6 +9,25 @@ import torch.nn.functional as F
 from .quantizer import VectorQuantizer
 from .base_models import Transformer, PositionEmbedding,\
                                 LinearEmbedding
+
+
+def calc_vae_loss(pred,target,mu, logvar  ):     
+    # reduction_loss = F.binary_cross_entropy(pred, target, reduction='sum')
+    reconstruction_loss = nn.MSELoss()(pred, target)
+    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    return reconstruction_loss + KLD
+                                           
+def calc_vq_loss(pred, target, quant_loss, quant_loss_weight=1.0, alpha=1.0):
+    """ function that computes the various components of the VQ loss """
+
+    exp_loss = nn.L1Loss()(pred[:,:,:50], target[:,:,:50])
+    rot_loss = nn.L1Loss()(pred[:,:,50:53], target[:,:,50:53])
+    jaw_loss = alpha * nn.L1Loss()(pred[:,:,53:], target[:,:,53:])
+    ## loss is VQ reconstruction + weighted pre-computed quantization loss
+    return quant_loss.mean() * quant_loss_weight + \
+            (exp_loss + rot_loss + jaw_loss)
+            
+            
 class VQVAE(nn.Module):
     """ VQ-VAE for motion prior learning 
     code adapted from https://github.com/evonneng/learning2listen
