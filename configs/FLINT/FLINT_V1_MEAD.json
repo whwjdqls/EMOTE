@@ -1,19 +1,15 @@
-{
-    "pipeline": "er2er",
-    "tag": "l2_32_smoothSS_",
-    "who": "listener",
-    "segment_tag": "",
+{   
+    "project_name": "FLINT",
+    "name": "test",
+    "model_path": "/scratch/jungbin/Audio_face_data/checkpoints/FLINT/MEAD",
     
-    "warmup_steps": 100000,
-    "model_path": "models/",
-    
-    
-
     "training": {
       "lr": 0.0001,
       "batch_size": 128,
       "num_epochs": 100,
-      "log_step": 10
+      "log_step": 20,
+      "save_step" : 3,
+      "save_dir" : "/scratch/jungbin/Audio_face_data/checkpoints/FLINT/MEAD"
     },
       
     "data":{

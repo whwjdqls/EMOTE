@@ -302,19 +302,19 @@ def get_vertices_from_flame(config, FLAME, expression_params, jaw_poses, device)
     """function to get vertices from FLAME model given expression and jaw pose parameters
 
     Args:
-        config (_type_): _description_
         FLAME : Model class in flame.py
         expression_params (torch.tensor): (BS, T, 50)
         jaw_poses (torch.tensor): (BS, T, 3)
     Output:
         vertices (torch.tensor): (BS, T, 15069)
     """
+    BS = expression_params.shape[0] # batch size can change for last batch in epoch
     # shape params are set to zero
-    shape_params = torch.zeros(config["training"]["batch_size"], \
-                                config["flame_config"]["shape_params"], dtype=torch.float32).to(device) # (BS, num_shape_params)
+    shape_params = torch.zeros(BS,config["flame_config"]["shape_params"], 
+                               dtype=torch.float32).to(device) # (BS, num_shape_params)
     # global rotation is set to zero 
     global_rotation = torch.tensor([0.0, 0.0 * RADIAN, 0.0], \
-        dtype=torch.float32).view(1,3).repeat(config["training"]["batch_size"],1).to(device) # (BS, 3)
+        dtype=torch.float32).view(1,3).repeat(BS,1).to(device) # (BS, 3)
     
     
     # (JB 11-07) loop through the sequence length,
@@ -326,16 +326,12 @@ def get_vertices_from_flame(config, FLAME, expression_params, jaw_poses, device)
         
         pose_params = torch.cat([global_rotation,
                                  jaw_poses[:,i,:]],dim=1) # (BS, 6)
- 
-        neck_pose=None,
-        eye_pose=None,
-        transl=None,
         vertices_, landmark = FLAME(
             shape_params, # (BS, 100)
             expression_params[:, i, :], # (BS, 50) 
             pose_params # (BS, 6)
         )
-        vertices_ = vertices_.reshape(config["training"]["batch_size"], -1) # (BS,5023, 3) -> (BS, 15069)
+        vertices_ = vertices_.reshape(BS, -1) # (BS,5023, 3) -> (BS, 15069)
         if i == 0:
             vertices = vertices_.unsqueeze(1) # (BS, 1, 15069)
         else:

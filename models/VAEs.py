@@ -10,13 +10,16 @@ from .quantizer import VectorQuantizer
 from .base_models import Transformer, PositionEmbedding,\
                                 LinearEmbedding
 
-
-def calc_vae_loss(pred,target,mu, logvar  ):     
-    # reduction_loss = F.binary_cross_entropy(pred, target, reduction='sum')
+# Following EMOTE paper,
+# λrec is set to 1000000 and λKL to 0.001, which makes the
+# converged KL divergence term less than one order of magnitude
+# lower than the reconstruction terms
+def calc_vae_loss(pred,target,mu, logvar, recon_weight=1000000, kl_weight=0.001):                            
+    """ function that computes the various components of the VAE loss """
     reconstruction_loss = nn.MSELoss()(pred, target)
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-    return reconstruction_loss + KLD
-                                           
+    return recon_weight * reconstruction_loss + kl_weight * KLD
+                                      
 def calc_vq_loss(pred, target, quant_loss, quant_loss_weight=1.0, alpha=1.0):
     """ function that computes the various components of the VQ loss """
 
