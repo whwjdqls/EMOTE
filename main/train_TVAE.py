@@ -12,19 +12,7 @@ import wandb
 from datasets import dataset
 from models import VAEs
 from models.flame_models import flame
-
-def seed_everything(seed: int): 
-    random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-# https://pytorch.org/docs/stable/notes/randomness.html#cuda-convolution-benchmarking
-# Disabling the benchmarking feature with torch.backends.cudnn.benchmark = False causes 
-# cuDNN to deterministically select an algorithm, possibly at the cost of reduced performance.
-    torch.backends.cudnn.benchmark = False # -> Might want to set this to True if it's too slow
-    
+from utils.extra import seed_everything
 
 
 def train_one_epoch(config, epoch, model, FLAME, optimizer, data_loader, device):
@@ -127,7 +115,7 @@ def main(args):
     
     print("Loading Dataset...")
     # train_dataset = dataset.FlameDataset(config)
-    train_dataset = dataset.MEADDataset(config, split='val')
+    train_dataset = dataset.MEADDataset(config, split='train')
     val_dataset = dataset.MEADDataset(config, split='val')
     print('val_dataset', len(val_dataset),'| train_dataset', len(train_dataset))
     
@@ -138,6 +126,9 @@ def main(args):
         val_dataset, batch_size=config["training"]["batch_size"], drop_last=True)
     
     optimizer = torch.optim.Adam(TVAE.parameters(), lr=config["training"]["lr"])
+    save_dir = os.path.join(config["training"]["save_dir"], config["name"])
+    print("save_dir", save_dir)
+    os.makedirs(save_dir, exist_ok=True)
     
     for epoch in range(0, config["training"]['num_epochs']):
         print('epoch', epoch, 'num_epochs', config["training"]['num_epochs'])
@@ -150,6 +141,7 @@ def main(args):
                 TVAE.state_dict(),
                 os.path.join(
                     config["training"]["save_dir"],
+                    config["name"],
                     "TVAE_{}.pth".format(epoch),
                 ),
             )
@@ -159,8 +151,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, required=True)
     parser.add_argument('--checkpoint', type=str, default=None)
-    parser.add_argument('--test', action='store_true')
-    parser.add_argument('--ar_load', action='store_true')
     args = parser.parse_args()
     print(args)
     

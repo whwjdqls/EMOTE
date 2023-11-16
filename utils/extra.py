@@ -1,3 +1,19 @@
+import os, random
+import torch
+import numpy as np
+
+def seed_everything(seed: int): 
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    # https://pytorch.org/docs/stable/notes/randomness.html#cuda-convolution-benchmarking
+    # Disabling the benchmarking feature with torch.backends.cudnn.benchmark = False causes 
+    # cuDNN to deterministically select an algorithm, possibly at the cost of reduced performance.
+    torch.backends.cudnn.benchmark = False # -> Might want to set this to True if it's too slow
+
 def class_from_str(str, module=None, none_on_fail = False) -> type:
     if module is None:
         module = sys.modules[__name__]
