@@ -10,6 +10,8 @@ from .quantizer import VectorQuantizer
 from .base_models import Transformer, PositionEmbedding,\
                                 LinearEmbedding
 
+from models.temporal import TransformerMasking, PositionalEncodings
+
 # Following EMOTE paper,
 # λrec is set to 1000000 and λKL to 0.001, which makes the
 # converged KL divergence term less than one order of magnitude
@@ -37,9 +39,8 @@ class VQVAE(nn.Module):
     """
     def __init__(self, config, version):
         super().__init__()
-        self.encoder = TransformerEncoder(config)
-        self.decoder = TransformerDecoder(
-                                config, config['transformer_config']['in_dim'])
+        self.encoder = TransformerEncoder(config['transformer_config'])
+        self.decoder = TransformerDecoder(config['transformer_config'])
         self.quantize = VectorQuantizer(config['VQuantizer']['n_embed'],
                                         config['VQuantizer']['zquant_dim'],
                                         beta=0.25)
@@ -150,13 +151,13 @@ class TVAE(nn.Module):
     """
     def __init__(self, config):
         super().__init__()
-        self.config = config
-        self.encoder = TransformerEncoder(config)
-        self.decoder = TransformerDecoder(config,config['transformer_config']['in_dim'])
-        self.FC_mean = nn.Linear(config['transformer_config']['hidden_size'], \
-                                    config['transformer_config']['hidden_size'])
-        self.FC_logvar = nn.Linear(config['transformer_config']['hidden_size'], \
-                                    config['transformer_config']['hidden_size'])
+        self.config = config['transformer_config']
+        self.encoder = TransformerEncoder(self.config)
+        self.decoder = TransformerDecoder(self.config)
+        self.mean = nn.Linear(self.config['hidden_size'], \
+                                    self.config['hidden_size'])
+        self.logvar = nn.Linear(self.config['hidden_size'], \
+                                    self.config['hidden_size'])
 
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5*logvar) # takes exponential function (log var -> var)
@@ -165,8 +166,8 @@ class TVAE(nn.Module):
 
     def forward(self, inputs):
         encoder_features = self.encoder(inputs) # (BS, T/q, 128)
-        mu = self.FC_mean(encoder_features) # (BS, T/q, 128)
-        logvar = self.FC_logvar(encoder_features) # (BS, T/q, 128)
+        mu = self.mean(encoder_features) # (BS, T/q, 128)
+        logvar = self.logvar(encoder_features) # (BS, T/q, 128)
         z = self.reparameterize(mu, logvar)
         pred_recon = self.decoder(z)
         return pred_recon, mu, logvar
@@ -182,14 +183,14 @@ class TransformerEncoder(nn.Module):
   def __init__(self, config):
     super().__init__()
     self.config = config
-    size=self.config['transformer_config']['in_dim'] # 50 + 3 = 53
-    dim=self.config['transformer_config']['hidden_size'] # d = 128
+    size=self.config['in_dim'] # 50 + 3 = 53
+    dim=self.config['hidden_size'] # d = 128
     layers = [nn.Sequential(
                    nn.Conv1d(size,dim,5,stride=2,padding=2,
                              padding_mode='replicate'),
                    nn.LeakyReLU(0.2, True),
                    nn.BatchNorm1d(dim))]
-    for _ in range(1, config['transformer_config']['quant_factor']):
+    for _ in range(1, self.config['quant_factor']):
         layers += [nn.Sequential(
                        nn.Conv1d(dim,dim,5,stride=1,padding=2,
                                  padding_mode='replicate'),
@@ -198,43 +199,70 @@ class TransformerEncoder(nn.Module):
                        nn.MaxPool1d(2)
                        )]
     self.squasher = nn.Sequential(*layers)
-
-    self.encoder_transformer = Transformer(
-        in_size=self.config['transformer_config']['hidden_size'], # 128
-        hidden_size=self.config['transformer_config']['hidden_size'], # 128
-        num_hidden_layers=\
-                self.config['transformer_config']['num_hidden_layers'], # 12 -> for flint unknown
-        num_attention_heads=\
-                self.config['transformer_config']['num_attention_heads'], # 8 -> for flint unknown
-        intermediate_size=\
-                self.config['transformer_config']['intermediate_size']) # 256 -> for flint unknown
-    
+    # following INFERNO, use nn.TransformerEncoder
+    encoder_layer = torch.nn.TransformerEncoderLayer(
+        d_model=self.config['hidden_size'],
+        nhead=self.config['num_attention_heads'],
+        dim_feedforward=self.config['intermediate_size'],
+        dropout=0.1,
+        activation='gelu',
+        batch_first=True
+    )
+    self.encoder_transformer = torch.nn.TransformerEncoder(
+        encoder_layer,
+        num_layers=self.config['num_hidden_layers']
+    )  
+    # define positional encoding. if false, None
+    if self.config['pos_encoding'] == "learned":
+        self.encoder_pos_encoding= PositionEmbedding( # for L2L use learnable PE but for FLINT use ALIBI PE
+            self.config["quant_sequence_length"],
+            self.config['hidden_size'])
+    else:
+        self.encoder_pos_encoding = None
+        
+    # Temperal bias
+    if self.config['temporal_bias'] == "alibi_future":
+        self.attention_mask = TransformerMasking.init_alibi_biased_mask_future(
+            self.config['num_attention_heads'], 1200)
+    else:
+        self.attention_mask = None
+        
     self.encoder_linear_embedding = LinearEmbedding( 
-        self.config['transformer_config']['hidden_size'],
-        self.config['transformer_config']['hidden_size'])
-    
-    self.encoder_pos_embedding = PositionEmbedding( # for L2L use learnable PE but for FLINT use ALIBI PE
-        self.config["transformer_config"]["quant_sequence_length"],
-        self.config['transformer_config']['hidden_size'])
-    
+        self.config['hidden_size'],
+        self.config['hidden_size'])
+
+        
   def forward(self, inputs):
     ## downdample into path-wise length seq before passing into transformer
     dummy_mask = {'max_mask': None, 'mask_index': -1, 'mask': None}
     inputs = self.squasher(inputs.permute(0,2,1)).permute(0,2,1) # (BS, T/q, 128)->(BS , 128, T/q) -> (BS, T/q, 128)
     encoder_features = self.encoder_linear_embedding(inputs)
-    encoder_features = self.encoder_pos_embedding(encoder_features)
-    encoder_features = self.encoder_transformer((encoder_features, dummy_mask))
+    
+    if self.encoder_pos_encoding is not None:
+        decoder_features = self.encoder_pos_encoding(encoder_features)
+
+    # add attention mask bias (if any)
+    mask = None
+    B, T = encoder_features.shape[:2]
+    if self.attention_mask is not None:
+        mask = self.attention_mask[:, :T, :T].clone() \
+            .detach().to(device=encoder_features.device)
+        if mask.ndim == 3: # the mask's first dimension needs to be num_head * batch_size
+            mask = mask.repeat(B, 1, 1)
+            
+    encoder_features = self.encoder_transformer(encoder_features, mask=mask)
     return encoder_features
   
 
 class TransformerDecoder(nn.Module):
   """ Decoder class for VQ-VAE with Transformer backbone """
 
-  def __init__(self, config, out_dim, is_audio=False):
+  def __init__(self, config, is_audio=False):
     super().__init__()
     self.config = config
-    size=self.config['transformer_config']['hidden_size']
-    dim=self.config['transformer_config']['hidden_size']
+    self.out_dim = config['in_dim'] # 50 + 3 = 53
+    size=self.config['hidden_size']
+    dim=self.config['hidden_size']
     self.expander = nn.ModuleList()
     self.expander.append(nn.Sequential(
     # https://github.com/NVIDIA/tacotron2/issues/182
@@ -247,10 +275,10 @@ class TransformerDecoder(nn.Module):
                                       #padding_mode='replicate'),
                    nn.LeakyReLU(0.2, True),
                    nn.BatchNorm1d(dim)))
-    num_layers = config['transformer_config']['quant_factor']+2 \
-        if is_audio else config['transformer_config']['quant_factor'] # we never take audio into account for TVAE -> num_layer = 3
-    seq_len = config["transformer_config"]["sequence_length"]*4 \
-        if is_audio else config["transformer_config"]["sequence_length"] # we never take audio into account for TVAE -> seq_len = 32
+    num_layers = self.config['quant_factor']+2 \
+        if is_audio else self.config['quant_factor'] # we never take audio into account for TVAE -> num_layer = 3
+    seq_len = self.config["sequence_length"]*4 \
+        if is_audio else self.config["sequence_length"] # we never take audio into account for TVAE -> seq_len = 32
     for _ in range(1, num_layers):
         self.expander.append(nn.Sequential(
                              nn.Conv1d(dim,dim,5,stride=1,padding=2,
@@ -258,35 +286,66 @@ class TransformerDecoder(nn.Module):
                              nn.LeakyReLU(0.2, True),
                              nn.BatchNorm1d(dim),
                              ))
-    self.decoder_transformer = Transformer(
-        in_size=self.config['transformer_config']['hidden_size'],
-        hidden_size=self.config['transformer_config']['hidden_size'],
-        num_hidden_layers=\
-            self.config['transformer_config']['num_hidden_layers'],
-        num_attention_heads=\
-            self.config['transformer_config']['num_attention_heads'],
-        intermediate_size=\
-            self.config['transformer_config']['intermediate_size'])
-    self.decoder_pos_embedding = PositionEmbedding(
-        seq_len,
-        self.config['transformer_config']['hidden_size'])
+    # following INFERNO, use nn.TransformerEncoder
+    decoder_layer = torch.nn.TransformerEncoderLayer(
+        d_model=self.config['hidden_size'],
+        nhead=self.config['num_attention_heads'],
+        dim_feedforward=self.config['intermediate_size'],
+        dropout=0.1,
+        activation='gelu',
+        batch_first=True
+    )
+    self.decoder_transformer = torch.nn.TransformerEncoder(
+        decoder_layer,
+        num_layers=self.config['num_hidden_layers']
+    )  
+    
+    # positional Encoding
+    if self.config['pos_encoding'] == "learned":
+        self.decoder_pos_encoding = PositionEmbedding(
+            seq_len,
+            self.config['hidden_size'])
+    else: # if self.config['pos_encoding'] == false
+        self.decoder_pos_encoding = None
+        
+    # Temperal bias
+    if self.config['temporal_bias'] == "alibi_future":
+        self.attention_mask = TransformerMasking.init_alibi_biased_mask_future(
+            self.config['num_attention_heads'], 1200)
+    else:
+        self.attention_mask = None
+        
+    # linear embedding
     self.decoder_linear_embedding = LinearEmbedding(
-        self.config['transformer_config']['hidden_size'],
-        self.config['transformer_config']['hidden_size'])
+        self.config['hidden_size'],
+        self.config['hidden_size'])
+
+    # smooth layer
     self.cross_smooth_layer=\
-        nn.Conv1d(config['transformer_config']['hidden_size'],
-                  out_dim, 5, padding=2)
+        nn.Conv1d(self.config['hidden_size'],
+                  self.out_dim, 5, padding=2)
 
   def forward(self, inputs):
-    dummy_mask = {'max_mask': None, 'mask_index': -1, 'mask': None}
     ## upsample into original length seq before passing into transformer
     for i, module in enumerate(self.expander):
         inputs = module(inputs.permute(0,2,1)).permute(0,2,1)
         if i > 0:
             inputs = inputs.repeat_interleave(2, dim=1)
     decoder_features = self.decoder_linear_embedding(inputs)
-    decoder_features = self.decoder_pos_embedding(decoder_features)
-    decoder_features = self.decoder_transformer((decoder_features, dummy_mask))
+    
+    if self.decoder_pos_encoding is not None:
+        decoder_features = self.decoder_pos_encoding(decoder_features)
+
+    # add attention mask bias (if any)
+    mask = None
+    B, T = decoder_features.shape[:2]
+    if self.attention_mask is not None:
+        mask = self.attention_mask[:, :T, :T].clone() \
+            .detach().to(device=decoder_features.device)
+        if mask.ndim == 3: # the mask's first dimension needs to be num_head * batch_size
+            mask = mask.repeat(B, 1, 1)
+            
+    decoder_features = self.decoder_transformer(decoder_features, mask=mask)
     pred_recon = self.cross_smooth_layer(
                                 decoder_features.permute(0,2,1)).permute(0,2,1)
     return pred_recon

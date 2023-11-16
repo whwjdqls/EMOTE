@@ -127,7 +127,7 @@ def main(args):
     
     print("Loading Dataset...")
     # train_dataset = dataset.FlameDataset(config)
-    train_dataset = dataset.MEADDataset(config, split='train')
+    train_dataset = dataset.MEADDataset(config, split='val')
     val_dataset = dataset.MEADDataset(config, split='val')
     print('val_dataset', len(val_dataset),'| train_dataset', len(train_dataset))
     
