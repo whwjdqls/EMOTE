@@ -13,8 +13,13 @@
     },
       
     "data":{
+      "dataset" : "MEAD",
       "data_dir" : "/scratch/jisoo/Audio_face_data/MEAD/Expression",
-      "window_size" : 32
+      "expression_dir" : "/scratch/jisoo/Audio_face_data/MEAD/Expression",
+      "window_size" : 20,
+      "start_clip" : 0,
+      "end_clip" : 0,
+      "stride" : 10
     },
     "flame_config":{
       "use_face_contour": true,

@@ -2,10 +2,14 @@ import numpy as np
 import time
 import torch
 import torch.utils.data as data
-cur_time = time.time()
-a = np.random.randn(124)
-print(a.shape)
-print("time z:", time.time()-cur_time)  
+import sys
+import json
+sys.path.append('../')
+from datasets.talkingheaddataset import TalkingHeadDataset
+
+config_path = "/home/whwjdqls99/EMOTE/configs/EMOTE/RAVDESS_dataset_test.json"
+config = json.load(open(config_path))
+TalkingHeadDataset(config, split='val')
 # a = np.random.rand(100000,50+6+128)
 # b = np.random.rand(100000,50+6+128)
 # c = np.random.rand(100000,50+6+128)

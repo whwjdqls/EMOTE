@@ -17,20 +17,21 @@ MEAD_episode_exceptions = ['M041_sad_level_2_020','M041_sad_level_2_021','M041_s
 # (10-25) 
 RAVDESS_ACTOR_DICT = {1 : 0, 3 : 1, 4 : 2, 5 : 3, 6 : 4, 7 : 5, 8 : 6, 9 : 7, 10 : 8, 11 : 9, 12 : 10, 13 : 11, 14 : 12, 15 : 13, 16 : 14, 17 : 15, 18 : 16, 19 : 17, 20 : 18, 21 : 19, 22 : 20, 23 : 21, 24 : 22, 25 : 23, # for train
                       2 : 24} # for val
-MEAD_ACTOR_DICT = {'M005': 0, 'M007': 1, 'M009': 2, 'M011': 3, 'M012': 4, 'M013': 5, 'M019': 6, 'M022': 7, 'M023': 8, 'M024': 9, 'M025': 10, 'M026': 11, 'M027': 12, 'M028': 13, 'M029': 14, 'M030': 15, 'M031': 16, 'M033': 17, 'M034': 18, 'M035': 19, 'M037': 20, 'M039': 21, 'M040': 22, 'M041': 23, 'M042': 24, 'W011': 25, 'W015': 26, 'W016': 27, 'W018': 28, 'W019': 29, 'W021': 30, 'W023': 31, 'W024': 32, 'W025': 33, 'W026': 34, 'W028': 35, 'W029': 36, 'W033': 37, 'W035': 38, 'W036': 39, 'W037': 40, 'W038': 41, 'W040': 42,
-                   'M003' : 43, 'W009' : 44} # for val
+MEAD_ACTOR_DICT = {'M005': 0, 'M007': 1, 'M009': 2, 'M011': 3, 'M012': 4, 'M013': 5, 'M019': 6,  'M023': 8, 'M024': 9, 'M025': 10, 'M026': 11, 'M027': 12, 'M028': 13, 'M029': 14, 'M030': 15, 'M031': 16, 'M033': 17, 'M034': 18, 'M035': 19, 'M037': 20, 'M039': 21, 'M040': 22, 'M041': 23, 'M042': 24,  'W015': 26, 'W016': 27, 'W018': 28, 'W019': 29, 'W021': 30, 'W023': 31, 'W024': 32, 'W025': 33, 'W026': 34, 'W028': 35, 'W029': 36, 'W033': 37, 'W035': 38, 'W036': 39, 'W037': 40, 'W038': 41, 'W040': 42,
+                   'M022': 7, 'W011': 25, 'M003' : 43, 'W009' : 44} # for val
 EMOTION_DICT = {'neutral': 1, 'calm': 2, 'happy': 3, 'sad': 4, 'angry' :  5, 'fear': 6, 'disgusted': 7, 'surprised': 8, 'contempt' : 9}
 GENDER_DICT = {'M' : 0, 'W' : 1}
 
-class MEADDataset(data.Dataset):
+class MotionPriorMEADDataset(data.Dataset):
     def __init__(self, config, split='train'):
         # list for all data
+        config = config['data']
+        self.config = config
         self.inputs = []
         self.split = split
         # base data directory
-        self.data_dir = config["data"]["data_dir"]
-        self.window_size = config["data"]["window_size"] # T in EMOTE paper
-                
+        self.data_dir = config["data_dir"]
+        self.window_size = config["window_size"] # T in EMOTE paper
         uid_path = '/home/whwjdqls99/Dynamic-Emotion-Embedding/DEE/MEAD_uid.json'
         with open(uid_path) as f:
             uid_dict = json.load(f)
