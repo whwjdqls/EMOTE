@@ -164,6 +164,7 @@ class Wav2Vec2Encoder(TemporalAudioEncoder):
         return []
 
     def _forward(self, sample, train=False, desired_output_length=None): 
+    
         if self.input_processor is not None:
             B = sample["raw_audio"].shape[0]
             T = sample["raw_audio"].shape[1]
@@ -190,12 +191,15 @@ class Wav2Vec2Encoder(TemporalAudioEncoder):
         if self.resampling and T is not None:
             assert T2 == T # sanity checking that the feature got resampled to the proper length
 
-        sample["audio_feature"] = feats_.last_hidden_state 
+        # sample["audio_feature"] = feats_.last_hidden_state 
+        output = feats_.last_hidden_state
 
         if self.dropout is not None:
-            sample["audio_feature"] = self.dropout(sample["audio_feature"])
+            # sample["audio_feature"] = self.dropout(sample["audio_feature"])
+            output = self.dropout(output)
 
-        return sample
+        # return sample
+        return output
 
         # assert T2 + 1  == 2*T # Wav2Vec doubles the feature dimensionality and then this is reduced by 1 
         # # (probably because of a temporal convolution window of 3) 

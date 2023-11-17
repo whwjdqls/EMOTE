@@ -7,7 +7,7 @@ from .wav2vec import Wav2Vec2Encoder
 import torch.nn.functional as F
 import copy
 import einops
-from .sequence_encoder import LinearSequenceEncoder, ConvSquasher, StackLinearSquash
+# from .sequence_encoder import LinearSequenceEncoder, ConvSquasher, StackLinearSquash
 # from inferno.models.talkinghead.FaceFormerDecoder import BertPriorDecoder 
 from omegaconf import open_dict
 from .VAEs import TVAE
@@ -20,6 +20,42 @@ def _create_squasher(self, type, input_dim, output_dim, quant_factor):
     else: 
         raise ValueError("Unknown squasher type")
 
+class ConvSquasher(nn.Module): 
+
+    def __init__(self, input_dim, quant_factor, output_dim) -> None:
+        super().__init__()
+        self.squasher = create_squasher(input_dim, output_dim, quant_factor)
+
+    def forward(self, x):
+        # BTF -> BFT 
+        x = x.transpose(1, 2)
+        x = self.squasher(x)
+        # BFT -> BTF
+        x = x.transpose(1, 2)
+        return x
+
+class StackLinearSquash(nn.Module): 
+    def __init__(self, input_dim, latent_frame_size, output_dim): 
+        super().__init__()
+        self.input_dim = input_dim
+        self.latent_frame_size = latent_frame_size
+        self.output_dim = output_dim
+        self.linear = nn.Linear(input_dim * latent_frame_size, output_dim)
+        
+    def forward(self, x):
+        B, T, F = x.shape
+        # input B, T, F -> B, T // latent_frame_size, F * latent_frame_size
+        assert T % self.latent_frame_size == 0, "T must be divisible by latent_frame_size"
+        T_latent = T // self.latent_frame_size
+        F_stack = F * self.latent_frame_size
+        x = x.reshape(B, T_latent, F_stack)
+        x = x.view(B * T_latent, F_stack)
+        x = self.linear(x)
+        x = x.view(B, T_latent, -1)
+        return x
+
+
+
 class EMOTE(nn.Module) :
     def __init__(self, EMOTE_config, FLINT_config, FLINT_ckpt) :
         super(EMOTE, self).__init__()
@@ -30,10 +66,10 @@ class EMOTE(nn.Module) :
             expected_fps=EMOTE_config['audio_config']['model_expected_fps'], # 50 fps is the default for wav2vec2 (but not sure if this holds universally)
             target_fps=EMOTE_config['audio_config']['target_fps'], # 25 fps is the default since we use 25 fps for the videos 
             freeze_feature_extractor=EMOTE_config['audio_config']['freeze_feature_extractor'])
-        input_feature = audio_encoder.output_feature_dim()
+        input_feature = self.audio_encoder.output_feature_dim()
         # sequence encoder
         decoder_config = EMOTE_config['sequence_decoder_config']
-        self.audio_map = LinearSequenceEncoder(input_feature, deocoder_config['feature_dim'])
+        self.audio_map = LinearSequenceEncoder(input_feature, decoder_config['feature_dim'])
         ## style encoder
         style_config = decoder_config['style_embedding']
         style_dim = style_config['n_intensities'] + style_config['n_identities'] + style_config['n_expression']
