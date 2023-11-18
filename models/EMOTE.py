@@ -3,8 +3,9 @@ import torch.nn as nn
 import numpy as np
 import math
 from transformers import Wav2Vec2Config, Wav2Vec2Processor, AutoConfig
-from wav2vec import Wav2Vec2Encoder
+from .wav2vec import Wav2Vec2Encoder
 import torch.nn.functional as F
+from .VAEs import TVAE
 # import copy
 # import einops
 # from .sequence_encoder import LinearSequenceEncoder, ConvSquasher, StackLinearSquash
@@ -86,7 +87,7 @@ class StackLinearSquash(nn.Module):
         self.latent_frame_size = latent_frame_size
         self.output_dim = output_dim
         self.linear = nn.Linear(input_dim * latent_frame_size, output_dim)
-        print(f'input dim : {self.input_dim * latent_frame_size}')
+        # print(f'input dim : {self.input_dim * latent_frame_size}')
         
     def forward(self, x):
         B, T, F = x.shape # (BS,64,256)
@@ -121,7 +122,7 @@ class EMOTE(nn.Module) :
         style_config = decoder_config['style_embedding']
         style_dim = style_config['n_intensities'] + style_config['n_identities'] + style_config['n_expression'] # 43
 
-        print(f'style dim : {style_dim}')
+        # print(f'style dim : {style_dim}')
         self.style_encoder = nn.Linear(style_dim, decoder_config['feature_dim'])
         ## decoder
         # transformer encoder
@@ -144,7 +145,7 @@ class EMOTE(nn.Module) :
             raise ValueError("Unknown squasher type")
 
         # Temporal VAE decoder
-        # self.decoder = TVAE(FLINT_config)
+        self.decoder = TVAE(FLINT_config)
         # decoder_ckpt = torch.load(FLINT_ckpt)
         # self.decoder.load_state_dict(decoder_ckpt)
         # decoder freeze
@@ -170,21 +171,16 @@ class EMOTE(nn.Module) :
 
     def decode(self, sample) :
         output = self.transformer_encoder(sample) # (BS,64,256)
-        print(f'decode shape : {output.shape}')
-        output = self.squasher(output) # (BS,)
-        print(f'squasher shape : {output.shape}') # (BS,16,256)
-        # output = self.decoder(sample)
+        output = self.squasher(output) # (BS,16,128)
+        output = self.decoder.decoder(output) # (BS,128,53)
 
         return output
 
     def forward(self, audio, condition) :
         audio_embedding = self.encode_audio(audio) # (BS,64,128)
-        print(f'audio : {audio_embedding.shape}')
         repeat_num = audio_embedding.shape[1]
         style_embedding = self.encode_style(condition).repeat(1,repeat_num,1) # (BS,64,128)
-        print(f'style : {style_embedding.shape}')
         styled_audio_cat = torch.cat([audio_embedding, style_embedding], dim=-1) # (BS,64,256)
-        print(f'cat : {styled_audio_cat.shape}')
-        output = self.decode(styled_audio_cat)
+        output = self.decode(styled_audio_cat) # (BS,128,53)
 
-        # audio_style_sum = torch.cat([audio_embedding, style_embedding], dim=2)
+        return output # (BS,128,53)
