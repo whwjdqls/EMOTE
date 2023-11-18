@@ -30,8 +30,8 @@ if __name__ =="__main__":
     # for param_tensor in model.state_dict():
     #     print(param_tensor, "\t", model.state_dict()[param_tensor].size())
     
-    print(model.encoder.attention_mask)
-    print(model.encoder.attention_mask.shape)
+    # print(model.encoder.attention_mask)
+    # print(model.encoder.attention_mask.shape)
     # Debug dataset
     # train_dataset = dataset.FlameDataset(config)
     # train_dataloader = torch.utils.data.DataLoader(
