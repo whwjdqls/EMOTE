@@ -4,6 +4,9 @@
 debugg.py
 *.out
 ./checkpoints/
+checkpoints/
+*.ckpt
+./checkpoints/*
 *.png
 *.sh
 ./wandb/

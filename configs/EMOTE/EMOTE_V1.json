@@ -25,16 +25,7 @@
       "dynamic_landmark_embedding_path" : "/home/whwjdqls99/EMOTE/models/flame_models/flame_dynamic_embedding.npy",
       "flame_model_path" : "/home/whwjdqls99/EMOTE/models/flame_models/generic_model.pkl"
     },
-    "motionprior_config":{
-      "in_dim": 53, 
-      "hidden_size": 128, 
-      "num_hidden_layers": 12,
-      "num_attention_heads": 8,
-      "intermediate_size": 256,
-      "sequence_length": 32,
-      "quant_sequence_length": 4,
-      "quant_factor": 3
-    },
+    "motionprior_config": "../FLINT/FLINT_V1_MEAD.json",
     "audio_config":{
       "model_specifier": "facebook/wav2vec2-base-960h" ,
       "trainable": false,
