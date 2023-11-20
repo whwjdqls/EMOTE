@@ -146,9 +146,11 @@ class EMOTE(nn.Module) :
 
         # Temporal VAE decoder
         self.decoder = TVAE(FLINT_config)
-        # decoder_ckpt = torch.load(FLINT_ckpt)
-        # self.decoder.load_state_dict(decoder_ckpt)
-        # decoder freeze
+        decoder_ckpt = torch.load(FLINT_ckpt)
+        self.decoder.load_state_dict(decoder_ckpt)
+        # freeze decoder
+        for param in self.decoder.parameters():
+            param.requires_grad = False
 
     def encode_audio(self, audio) :
         '''
