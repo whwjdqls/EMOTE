@@ -51,9 +51,6 @@
       "nhead": 8,
       "dropout": 0.25,
       "activation": "gelu",
-      "max_len": 600,
-      "period": 30,
-      "vertices_dim": 15069,
       "squash_before": false,
       "squash_after": true,
       "squash_type": "stack_linear",
@@ -66,28 +63,10 @@
         "n_shape": 300,
         "n_exp": 100,
         "flame_lmk_embedding_path": "FLAME/geometry/landmark_embedding.npy"},
-      "flame_space_loss": false,
-      "rotation_loss_space": "6d",
-      "rotation_representation": "aa",
-      "post_bug_fix": true,
       "style_embedding":{
-        "use_shape": false,
-        "type": "emotion_linear",
-        "use_video_expression": false,
-        "gt_expression_label": true,
-        "gt_expression_intensity": true,
         "n_intensities": 3,
-        "gt_expression_identity": true,
         "n_identities": 45,
-        "disentangle_identity": false,
-        "use_expression": false,
-        "n_expression": 9,
-        "use_valence": false,
-        "use_arousal": false,
-        "use_emotion_feature": false,
-        "use_bias": true},
-      "temporal_bias_type": "faceformer_future",
-      "style_op": "cat"
+        "n_expression": 9}
     }
 
   }
