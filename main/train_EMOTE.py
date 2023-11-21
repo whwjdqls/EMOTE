@@ -94,25 +94,31 @@ def val_one_epoch(config,FLINT_config, epoch, model, FLAME, data_loader, device)
             data, label = data_label
             # so many to(device) calls.. made a list_to function
             audio, flame_param = list_to(data, device)
+            # 11-21 JB BUGGGGGG
+            # as we are using the while clip for validation set, 
+            # sometimes the time dimension of the audio latent and 
+            # exp param are different
+            # for now we match this by cutting the audio (usaullay longer)
+            seq_len = flame_param.shape[1]
+            # also, temporal len should be divisible by 4 due to EMOTEs quant factor
+            seq_len = seq_len - (seq_len % 4)
+            # seq_len is 30 fps and audio sample rate is 16k
+            # so, audio len should be seq_len / 30 * 16000
+            # ex ) 180 seq_len (6 sec) -> 180 / 30 * 16000 = 96000 (6 sec)
+            audio_len = int(seq_len / 30 * 16000)
+            audio = audio[:,:audio_len,:]
+
+            
             emotion, intensity, gender, actor_id = list_to(label, device)
             # condition ([emotion, intensity, identity]])   
             condition = label_to_condition_MEAD(emotion, intensity, actor_id)
             
             params_pred = model(audio, condition) 
 
-            
-            # 11-21 JB BUGGGGGG
-            # as we are using the while clip for validation set, 
-            # sometimes the exp_pred is longer thatn exp_target as audio samples are longer
-            # for now, we are just truncating the pred to match the target -> this can be improved
-            min_len = min(params_pred.shape[1], flame_param.shape[1])
-            # also, temporal len should be divisible by 4 due to EMOTEs quant factor
-            min_len = min_len - (min_len % 4)
-            
-            exp_param_pred = params_pred[:,:min_len,:50].to(device)
-            jaw_pose_pred = params_pred[:,:min_len,50:53].to(device)
-            exp_param_target = flame_param[:,:min_len,:50].to(device)
-            jaw_pose_target = flame_param[:,:min_len,50:53].to(device)
+            exp_param_pred = params_pred[:,:,:50].to(device)
+            jaw_pose_pred = params_pred[:,:,50:53].to(device)
+            exp_param_target = flame_param[:,:,:50].to(device)
+            jaw_pose_target = flame_param[:,:,50:53].to(device)
 
             
             vertices_pred = flame.get_vertices_from_flame(FLINT_config, FLAME, exp_param_pred, jaw_pose_pred, device)
@@ -141,7 +147,7 @@ def main(args, config):
     
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # device = torch.device("cpu") # use cpu for now
+
     print('using device', device)
     
     seed_everything(42)
