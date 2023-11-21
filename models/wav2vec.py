@@ -8,8 +8,20 @@ from torch.nn import Dropout
 from transformers import Wav2Vec2Model, Wav2Vec2Processor, Wav2Vec2Config, Wav2Vec2ForSequenceClassification, Wav2Vec2FeatureExtractor, Wav2Vec2PreTrainedModel
 from transformers.models.wav2vec2.modeling_wav2vec2 import _compute_mask_indices, BaseModelOutput, Wav2Vec2BaseModelOutput
 import torch.nn.functional as F
-# from .Bases import TemporalAudioEncoder
 
+class TemporalAudioEncoder(torch.nn.Module): 
+
+    def __init__(self):
+        super().__init__() 
+
+    def forward(self, sample, train=False, desired_output_length=None, **kwargs): 
+        raise NotImplementedError("Subclasses must implement this method")
+
+    def get_trainable_parameters(self): 
+        raise NotImplementedError()
+
+    def output_feature_dim(self): 
+        raise NotImplementedError()
 
 def temporal_interpolation(features, input_fps, output_fps, output_len=None):
     features = features.transpose(1, 2)
@@ -125,7 +137,7 @@ class Wav2Vec2ForSequenceClassificationResampled(Wav2Vec2ForSequenceClassificati
 
         return input_lengths
 
-class Wav2Vec2Encoder(torch.nn.Module):
+class Wav2Vec2Encoder(TemporalAudioEncoder):
 
     def __init__(self, model_specifier, trainable, with_processor=True, target_fps=25, expected_fps=50, 
                 freeze_feature_extractor=True, 
@@ -165,23 +177,26 @@ class Wav2Vec2Encoder(torch.nn.Module):
 
     def _forward(self, sample, train=False, desired_output_length=None): 
     
-        if self.input_processor is not None:
-            B = sample["raw_audio"].shape[0]
-            T = sample["raw_audio"].shape[1]
-            # proc = self.input_processor(sample["raw_audio"], sampling_rate=sample["samplerate"], return_tensors="pt")[0]
-            # raw_audio = sample["raw_audio"].view( B, -1)
-            raw_audio = sample["raw_audio"].view( B, -1)
-            proc = self.input_processor(raw_audio, sampling_rate=sample["samplerate"][0], return_tensors="pt")
-            input = proc.input_values[0].to(device=raw_audio.device)
-            sample["processed_audio"] = input
-        else: 
-            B = sample["processed_audio"].shape[0]
-            # T = sample["processed_audio"].shape[1]
-            T = None
-            input = sample["processed_audio"].view( B, -1)
+        # if self.input_processor is not None:
+        #     B = sample["raw_audio"].shape[0]
+        #     T = sample["raw_audio"].shape[1]
+        #     # proc = self.input_processor(sample["raw_audio"], sampling_rate=sample["samplerate"], return_tensors="pt")[0]
+        #     # raw_audio = sample["raw_audio"].view( B, -1)
+        #     raw_audio = sample["raw_audio"].view( B, -1)
+        #     proc = self.input_processor(raw_audio, sampling_rate=sample["samplerate"][0], return_tensors="pt")
+        #     input = proc.input_values[0].to(device=raw_audio.device)
+        #     sample["processed_audio"] = input
+        # else: 
+        #     B = sample["processed_audio"].shape[0]
+        #     # T = sample["processed_audio"].shape[1]
+        #     T = None
+        #     input = sample["processed_audio"].view( B, -1)
+        B = sample.shape[0]
+        T = None
+        # input = sample.view(B,-1)
         if isinstance(self.model, Wav2Vec2ModelResampled):
             desired_output_length = desired_output_length or T
-            feats_ = self.model(input, desired_output_length=desired_output_length)
+            feats_ = self.model(sample, desired_output_length=desired_output_length)
             # feats_ = self.model(input)
         else:
             feats_ = self.model(input)
@@ -194,9 +209,9 @@ class Wav2Vec2Encoder(torch.nn.Module):
         # sample["audio_feature"] = feats_.last_hidden_state 
         output = feats_.last_hidden_state
 
-        if self.dropout is not None:
-            # sample["audio_feature"] = self.dropout(sample["audio_feature"])
-            output = self.dropout(output)
+        # if self.dropout is not None:
+        #     # sample["audio_feature"] = self.dropout(sample["audio_feature"])
+        #     output = self.dropout(output)
 
         # return sample
         return output
