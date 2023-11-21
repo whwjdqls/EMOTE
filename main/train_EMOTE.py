@@ -106,7 +106,7 @@ def val_one_epoch(config,FLINT_config, epoch, model, FLAME, data_loader, device)
             # so, audio len should be seq_len / 30 * 16000
             # ex ) 180 seq_len (6 sec) -> 180 / 30 * 16000 = 96000 (6 sec)
             audio_len = int(seq_len / 30 * 16000)
-            audio = audio[:,:audio_len,:]
+            audio = audio[:,:audio_len]
 
             
             emotion, intensity, gender, actor_id = list_to(label, device)
