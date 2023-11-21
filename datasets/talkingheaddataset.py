@@ -5,7 +5,7 @@ import json
 import numpy as np
 import torch.utils.data as data
 import tqdm
-from .dataset_utils import get_FLAME_params_MEAD
+from .dataset_utils import get_FLAME_params_RAVDESS, get_FLAME_params_MEAD
 from transformers import Wav2Vec2Processor
 # import cv2
 # dataset to store whole clip
@@ -18,8 +18,8 @@ MEAD_episode_exceptions = ['M041_sad_level_2_020','M041_sad_level_2_021','M041_s
 # (10-25) 
 RAVDESS_ACTOR_DICT = {1 : 0, 3 : 1, 4 : 2, 5 : 3, 6 : 4, 7 : 5, 8 : 6, 9 : 7, 10 : 8, 11 : 9, 12 : 10, 13 : 11, 14 : 12, 15 : 13, 16 : 14, 17 : 15, 18 : 16, 19 : 17, 20 : 18, 21 : 19, 22 : 20, 23 : 21, 24 : 22, 25 : 23, # for train
                       2 : 24} # for val
-MEAD_ACTOR_DICT = {'M005': 0, 'M007': 1, 'M009': 2, 'M011': 3, 'M012': 4, 'M013': 5, 'M019': 6,  'M023': 8, 'M024': 9, 'M025': 10, 'M026': 11, 'M027': 12, 'M028': 13, 'M029': 14, 'M030': 15, 'M031': 16, 'M033': 17, 'M034': 18, 'M035': 19, 'M037': 20, 'M039': 21, 'M040': 22, 'M041': 23, 'M042': 24,  'W015': 26, 'W016': 27, 'W018': 28, 'W019': 29, 'W021': 30, 'W023': 31, 'W024': 32, 'W025': 33, 'W026': 34, 'W028': 35, 'W029': 36, 'W033': 37, 'W035': 38, 'W036': 39, 'W037': 40, 'W038': 41, 'W040': 42,
-                   'M022': 7, 'W011': 25, 'M003' : 43, 'W009' : 44} # for val
+MEAD_ACTOR_DICT = {'M005': 0, 'M007': 1, 'M009': 2, 'M011': 3, 'M012': 4, 'M013': 5, 'M019': 6, 'M023': 7, 'M024': 8, 'M025': 9, 'M026': 10, 'M027': 11, 'M028': 12, 'M029': 13, 'M030': 14, 'M031': 15, 'M033': 16, 'M034': 17, 'M035': 18, 'M037': 19, 'M039': 20, 'M040': 21, 'M041': 22, 'M042': 23, 'W015': 24, 'W016': 25, 'W018': 26, 'W019': 27, 'W021': 28, 'W023': 29, 'W024': 30, 'W025': 31, 'W026': 32, 'W028': 33, 'W029': 34, 'W033': 35, 'W035': 36, 'W036': 37, 'W037': 38, 'W038': 39, 'W040': 40,
+                   'M022': 41, 'W011': 42, 'M003' : 43, 'W009' : 44} # for val
 EMOTION_DICT = {'neutral': 1, 'calm': 2, 'happy': 3, 'sad': 4, 'angry' :  5, 'fear': 6, 'disgusted': 7, 'surprised': 8, 'contempt' : 9}
 GENDER_DICT = {'M' : 0, 'W' : 1}
 
@@ -111,7 +111,7 @@ class TalkingHeadDataset(data.Dataset):
         if self.dataset == 'MEAD':
             # pass
             # uid_path = "../MEAD_uid.json"
-            uid_path = './MEAD_uid.json'
+            uid_path = '/home/whwjdqls99/EMOTE/datasets/MEAD_uid_test.json'
             with open(uid_path) as f:
                 uid_dict = json.load(f)
                 
@@ -142,8 +142,10 @@ class TalkingHeadDataset(data.Dataset):
                 
                 episodes = param_dict.keys()
                 for episode in episodes :
-                    expression_feature = torch.tensor(param_dict[episode]['expression'], dtype=torch.float32) #(len, 100)
-
+                    expression_feature = torch.tensor(param_dict[episode]['expression'], dtype=torch.float32) #(len, 50)
+                    jaw_feature = torch.tensor(param_dict[episode]['jaw'], dtype=torch.float32) #(len, 3)
+                    expression_feature = torch.cat([expression_feature, jaw_feature], dim=1) #(len, 53)
+                    
                     episode_name = uid + '_' + episode
                     
                     if episode_name in MEAD_episode_exceptions:
@@ -213,8 +215,13 @@ if __name__ == "__main__":
     # print(data[0].shape)
     # print(len(data))
     
-    config_path = "/home/whwjdqls99/EMOTE/configs/FLINT/FLINT_V1_MEAD.json"
-    config = json.load(open(config_path))
-    data = MEADDataset(config, split='val')
-    print(data[0].shape)
-    print(len(data))
+    # config_path = "/home/whwjdqls99/EMOTE/configs/EMOTE/EMOTE_V1.json"
+    # config = json.load(open(config_path))
+    # data = TalkingHeadDataset(config, split='train')
+    # data_label = data[0]
+    # data, label = data_label
+    # flame_param, audio = data
+    # print(flame_param.shape)
+    # print(audio.shape)
+    
+    

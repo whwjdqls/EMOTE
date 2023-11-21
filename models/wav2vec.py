@@ -8,7 +8,7 @@ from torch.nn import Dropout
 from transformers import Wav2Vec2Model, Wav2Vec2Processor, Wav2Vec2Config, Wav2Vec2ForSequenceClassification, Wav2Vec2FeatureExtractor, Wav2Vec2PreTrainedModel
 from transformers.models.wav2vec2.modeling_wav2vec2 import _compute_mask_indices, BaseModelOutput, Wav2Vec2BaseModelOutput
 import torch.nn.functional as F
-from .Bases import TemporalAudioEncoder
+# from .Bases import TemporalAudioEncoder
 
 
 def temporal_interpolation(features, input_fps, output_fps, output_len=None):
@@ -125,7 +125,7 @@ class Wav2Vec2ForSequenceClassificationResampled(Wav2Vec2ForSequenceClassificati
 
         return input_lengths
 
-class Wav2Vec2Encoder(TemporalAudioEncoder):
+class Wav2Vec2Encoder(torch.nn.Module):
 
     def __init__(self, model_specifier, trainable, with_processor=True, target_fps=25, expected_fps=50, 
                 freeze_feature_extractor=True, 

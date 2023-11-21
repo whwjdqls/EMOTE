@@ -13,6 +13,10 @@ from .VAEs import TVAE
 # from omegaconf import open_dict
 
 # from VAEs import TVAE
+def calculate_vertice_loss(pred, target):
+     reconstruction_loss = nn.MSELoss()(pred, target)
+     return reconstruction_loss
+ 
 
 def _create_squasher(type, input_dim, output_dim, quant_factor, latent_frame_size =4): 
     if type == "conv": 
@@ -146,9 +150,11 @@ class EMOTE(nn.Module) :
 
         # Temporal VAE decoder
         self.decoder = TVAE(FLINT_config)
-        # decoder_ckpt = torch.load(FLINT_ckpt)
-        # self.decoder.load_state_dict(decoder_ckpt)
-        # decoder freeze
+        decoder_ckpt = torch.load(FLINT_ckpt)
+        self.decoder.load_state_dict(decoder_ckpt)
+        # freeze decoder
+        for param in self.decoder.parameters():
+            param.requires_grad = False
 
     def encode_audio(self, audio) :
         '''

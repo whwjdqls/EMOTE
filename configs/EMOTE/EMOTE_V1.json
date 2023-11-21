@@ -9,12 +9,17 @@
       "num_epochs": 100,
       "log_step": 20,
       "save_step" : 3,
-      "save_dir" : "/scratch/jungbin/Audio_face_data/checkpoints/FLINT/MEAD"
+      "save_dir" : "/scratch/jungbin/Audio_face_data/checkpoints/EMOTE/MEAD"
     },
       
     "data":{
-      "data_dir" : "/scratch/jisoo/Audio_face_data/MEAD/Expression",
-      "window_size" : 32
+      "dataset" : "MEAD",
+      "audio_dir" : "/scratch/jungbin/Audio_face_data/MEAD/Audio_samples",
+      "expression_dir" : "/scratch/jungbin/Audio_face_data/MEAD/Expression",
+      "window_size" : 20,
+      "start_clip" : 0,
+      "end_clip" : 0,
+      "stride" : 10
     },
     "flame_config":{
       "use_face_contour": true,
@@ -25,12 +30,17 @@
       "dynamic_landmark_embedding_path" : "/home/whwjdqls99/EMOTE/models/flame_models/flame_dynamic_embedding.npy",
       "flame_model_path" : "/home/whwjdqls99/EMOTE/models/flame_models/generic_model.pkl"
     },
-    "motionprior_config": "../FLINT/FLINT_V1_MEAD.json",
+    "motionprior_config":{
+      "config_path" : "/home/whwjdqls99/EMOTE/configs/FLINT/FLINT_V1_MEAD.json",
+      "checkpoint_path" : "/scratch/jungbin/Audio_face_data/checkpoints/FLINT/MEAD/test/TVAE_99.pth"
+    },
     "audio_config":{
       "model_specifier": "facebook/wav2vec2-base-960h" ,
       "trainable": false,
       "with_processor": false,
-      "freeze_feature_extractor": true
+      "freeze_feature_extractor": true,
+      "model_expected_fps" : 50,
+      "target_fps" :30
     },
     "sequence_encoder_config": {
       "feature_dim": 128
@@ -48,6 +58,7 @@
       "squash_after": true,
       "squash_type": "stack_linear",
       "quant_factor": 3,
+      "latent_frame_size" : 4,
       "positional_encoding":{
         "type": "none"},
       "flame":
@@ -67,10 +78,10 @@
         "gt_expression_intensity": true,
         "n_intensities": 3,
         "gt_expression_identity": true,
-        "n_identities": 32,
+        "n_identities": 45,
         "disentangle_identity": false,
         "use_expression": false,
-        "n_expression": 8,
+        "n_expression": 9,
         "use_valence": false,
         "use_arousal": false,
         "use_emotion_feature": false,
