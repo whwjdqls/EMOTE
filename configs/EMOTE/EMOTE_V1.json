@@ -11,6 +11,9 @@
       "save_step" : 3,
       "save_dir" : "/scratch/jungbin/Audio_face_data/checkpoints/EMOTE/MEAD"
     },
+    "validation":{
+      "batch_size" : 1
+    },
       
     "data":{
       "dataset" : "MEAD",

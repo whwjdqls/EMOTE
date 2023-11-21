@@ -349,3 +349,33 @@ class TransformerDecoder(nn.Module):
     pred_recon = self.cross_smooth_layer(
                                 decoder_features.permute(0,2,1)).permute(0,2,1)
     return pred_recon
+
+  def _forward(self, inputs):
+    ## forward function used in EMOTE 
+    ## FLINTs quant size is 8 which means the temperal length reduces to 1/8
+    ## however, EMOTE's quant size is 4, we have to map EMOTEs latents to FLINTs latents in 
+    ## the second layer of the FLINT's expander!
+    for i, module in enumerate(self.expander):
+        if i == 0 :
+            continue
+        inputs = module(inputs.permute(0,2,1)).permute(0,2,1)
+        if i > 0:
+            inputs = inputs.repeat_interleave(2, dim=1)
+    decoder_features = self.decoder_linear_embedding(inputs)
+    
+    if self.decoder_pos_encoding is not None:
+        decoder_features = self.decoder_pos_encoding(decoder_features)
+
+    # add attention mask bias (if any)
+    mask = None
+    B, T = decoder_features.shape[:2]
+    if self.attention_mask is not None:
+        mask = self.attention_mask[:, :T, :T].clone() \
+            .detach().to(device=decoder_features.device)
+        if mask.ndim == 3: # the mask's first dimension needs to be num_head * batch_size
+            mask = mask.repeat(B, 1, 1)
+            
+    decoder_features = self.decoder_transformer(decoder_features, mask=mask)
+    pred_recon = self.cross_smooth_layer(
+                                decoder_features.permute(0,2,1)).permute(0,2,1)
+    return pred_recon

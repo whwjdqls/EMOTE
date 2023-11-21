@@ -25,7 +25,12 @@ if __name__ =="__main__":
     print(mu.shape)
     print(logvar.shape)
     
-        
+    latents = torch.rand(BS, 8, 128)
+    EMOTE_decoder = model.decoder
+    
+    out = EMOTE_decoder._forward(latents)
+    print(out.shape)
+    
     # print("Model's state_dict:")
     # for param_tensor in model.state_dict():
     #     print(param_tensor, "\t", model.state_dict()[param_tensor].size())

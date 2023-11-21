@@ -16,7 +16,16 @@ from models import VAEs, EMOTE
 from models.flame_models import flame
 from utils.extra import seed_everything
 
+def list_to(list_,device):
+    """move a list of tensors to device
+    """
+    for i in range(len(list_)):
+        list_[i] = list_[i].to(device)
+    return list_
+
 def label_to_condition_MEAD(emotion, intensity, actor_id):
+    """labels to one hot condition vector
+    """
     emotion = emotion - 1 # as labels start from 1
     emotion_one_hot = torch.nn.functional.one_hot(emotion, num_classes=9)
     intensity = intensity - 1 # as labels start from 1
@@ -24,11 +33,11 @@ def label_to_condition_MEAD(emotion, intensity, actor_id):
     # this might not be fair for validation set 
     actor_id_one_hot = torch.nn.functional.one_hot(actor_id, num_classes=45) # all actors
     condition = torch.cat([emotion_one_hot, intensity_one_hot, actor_id_one_hot], dim=-1) # (BS, 50)
-    return condition
+    return condition.to(torch.float32)
     
     
     
-def train_one_epoch(config, epoch, model, FLAME, optimizer, data_loader, device):
+def train_one_epoch(config,FLINT_config, epoch, model, FLAME, optimizer, data_loader, device):
     """
     Train the model for one epoch
     """
@@ -39,18 +48,25 @@ def train_one_epoch(config, epoch, model, FLAME, optimizer, data_loader, device)
     total_steps = len(data_loader)
     for i, data_label in enumerate(data_loader):
         data, label = data_label
-        flame_param, audio = data
-        emotion, intensity, gender, actor_id = label
+        audio, flame_param = list_to(data, device)
+        emotion, intensity, gender, actor_id = list_to(label, device)
         # condition ([emotion, intensity, identity]])   
         condition = label_to_condition_MEAD(emotion, intensity, actor_id)
-             
+        print('audio', audio.shape, 'condition', condition.shape)
+            
         params_pred = model(audio, condition) # batch, seq_len, 53
+        print("params_pred", params_pred.shape)
         exp_param_pred = params_pred[:,:,:50].to(device)
         jaw_pose_pred = params_pred[:,:,50:53].to(device)
+        exp_param_target = flame_param[:,:,:50].to(device)
+        jaw_pose_target = flame_param[:,:,50:53].to(device)
 
-        vertices_pred = flame.get_vertices_from_flame(config, FLAME, exp_param_pred, jaw_pose_pred, device)
-        vertices_target = flame.get_vertices_from_flame(config, FLAME, exp_param, jaw_pose, device)
-        
+        vertices_pred = flame.get_vertices_from_flame(FLINT_config, FLAME, exp_param_pred, jaw_pose_pred, device)
+        vertices_target = flame.get_vertices_from_flame(FLINT_config, FLAME, exp_param_target, jaw_pose_target, device)
+        print('exp_param_pred', exp_param_pred.shape, 'jaw_pose_pred', jaw_pose_pred.shape)
+        print('exp_param_target', exp_param_target.shape, 'jaw_pose_target', jaw_pose_target.shape)
+        print('vertices_pred', vertices_pred.shape, 'vertices_target', vertices_target.shape)
+            
         loss = EMOTE.calculate_vertice_loss(vertices_pred, vertices_target)
         optimizer.zero_grad() 
         loss.backward()
@@ -71,7 +87,7 @@ def train_one_epoch(config, epoch, model, FLAME, optimizer, data_loader, device)
     # wandb.log({"train loss (epoch)": avg_loss})
     print("Train Epoch: {}\tAverage Loss: {:.6f}".format(epoch, avg_loss))
     
-def val_one_epoch(config, epoch, model, FLAME, data_loader, device):
+def val_one_epoch(config,FLINT_config, epoch, model, FLAME, data_loader, device):
     model.eval()
     model.to(device)
     FLAME.to(device)
@@ -80,19 +96,26 @@ def val_one_epoch(config, epoch, model, FLAME, data_loader, device):
     with torch.no_grad():
         for i, data_label in enumerate(data_loader):
             data, label = data_label
-            flame_param, audio = data
-            emotion, intensity, gender, actor_id = label
+            # so many to(device) calls.. made a list_to function
+            audio, flame_param = list_to(data, device)
+            emotion, intensity, gender, actor_id = list_to(label, device)
             # condition ([emotion, intensity, identity]])   
             condition = label_to_condition_MEAD(emotion, intensity, actor_id)
-                
+            print('audio', audio.shape, 'condition', condition.shape)
             
             params_pred = model(audio, condition) 
-            params_pred = model(audio, condition) # batch, seq_len, 53
+            print('params_pred', params_pred.shape)
+            
             exp_param_pred = params_pred[:,:,:50].to(device)
             jaw_pose_pred = params_pred[:,:,50:53].to(device)
-
-            vertices_pred = flame.get_vertices_from_flame(config, FLAME, exp_param_pred, jaw_pose_pred, device)
-            vertices_target = flame.get_vertices_from_flame(config, FLAME, exp_param, jaw_pose, device)
+            exp_param_target = flame_param[:,:,:50].to(device)
+            jaw_pose_target = flame_param[:,:,50:53].to(device)
+            print('exp_param_pred', exp_param_pred.shape, 'jaw_pose_pred', jaw_pose_pred.shape)
+            print('exp_param_target', exp_param_target.shape, 'jaw_pose_target', jaw_pose_target.shape)
+            
+            vertices_pred = flame.get_vertices_from_flame(FLINT_config, FLAME, exp_param_pred, jaw_pose_pred, device)
+            vertices_target = flame.get_vertices_from_flame(FLINT_config, FLAME, exp_param_target, jaw_pose_target, device)
+            print('vertices_pred', vertices_pred.shape, 'vertices_target', vertices_target.shape)
             
             loss = EMOTE.calculate_vertice_loss(vertices_pred, vertices_target)
             val_loss += loss.detach().item()
@@ -131,12 +154,24 @@ def main(args, config):
     # models
     print("Loading Models...")
     TalkingHead = EMOTE.EMOTE(config, FLINT_config, FLINT_ckpt)
-    FLAME = flame.FLAME(config)
+    # JB 11-21 have to have differnt flame models as it is initialized 
+    # by batch size and train/val sets have different batch sizes
+    # this can be improved by making FLAME invariant to batch size 
+    # also, FLAME is currently initialized by EMOTE_config
+    # I am not sure if this is the best way to do it
+    FLAME_train = flame.FLAME(config, split='train')
+    FLAME_val = flame.FLAME(config, split='val')
+
     
-    
+    print("talkingHead state dict and shapes")
+    for name, param in TalkingHead.named_parameters():
+        print(name, param.shape)
+        
     print("Loading Dataset...")
     # train_dataset = dataset.FlameDataset(config)
     train_dataset = talkingheaddataset.TalkingHeadDataset(config, split='train')
+    data, labels = train_dataset[0]
+
     val_dataset = talkingheaddataset.TalkingHeadDataset(config, split='val')
     print('val_dataset', len(val_dataset),'| train_dataset', len(train_dataset))
     
@@ -144,7 +179,7 @@ def main(args, config):
         train_dataset, batch_size=config["training"]["batch_size"], shuffle=True, drop_last=True)
     
     val_dataloader = torch.utils.data.DataLoader(
-        val_dataset, batch_size=config["training"]["batch_size"], drop_last=True)
+        val_dataset, batch_size=config["validation"]["batch_size"], drop_last=True)
     
     optimizer = torch.optim.Adam(TalkingHead.parameters(), lr=config["training"]["lr"])
     save_dir = os.path.join(config["training"]["save_dir"], config["name"])
@@ -153,8 +188,8 @@ def main(args, config):
     
     for epoch in range(0, config["training"]['num_epochs']):
         print('epoch', epoch, 'num_epochs', config["training"]['num_epochs'])
-        train_one_epoch(config, epoch, TalkingHead, FLAME, optimizer, train_dataloader, device)
-        val_one_epoch(config, epoch, TalkingHead, FLAME, val_dataloader, device)
+        train_one_epoch(config, FLINT_config, epoch, TalkingHead, FLAME_train, optimizer, train_dataloader, device)
+        val_one_epoch(config, FLINT_config, epoch, TalkingHead, FLAME_val, val_dataloader, device)
         print("-"*50)
 
         if (epoch != 0) and (epoch % config["training"]["save_step"] == 0) :

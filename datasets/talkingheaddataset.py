@@ -206,22 +206,24 @@ class FlameDataset(data.Dataset):
         return len(self.inputs)
     
     
-if __name__ == "__main__":
-    import json
+# if __name__ == "__main__":
+#     import json
     
-    # config_path = "/home/whwjdqls99/EMOTE/configs/FLINT/FLINT_V1.json"
-    # config = json.load(open(config_path))
-    # data = FlameDataset(config)
-    # print(data[0].shape)
-    # print(len(data))
+#     config_path = "/home/whwjdqls99/EMOTE/configs/FLINT/FLINT_V1.json"
+#     config = json.load(open(config_path))
+#     data = FlameDataset(config)
+#     print(data[0].shape)
+#     print(len(data))
     
-    # config_path = "/home/whwjdqls99/EMOTE/configs/EMOTE/EMOTE_V1.json"
-    # config = json.load(open(config_path))
-    # data = TalkingHeadDataset(config, split='train')
-    # data_label = data[0]
-    # data, label = data_label
-    # flame_param, audio = data
-    # print(flame_param.shape)
-    # print(audio.shape)
+#     config_path = "/home/whwjdqls99/EMOTE/configs/EMOTE/EMOTE_V1.json"
+#     config = json.load(open(config_path))
+#     data = TalkingHeadDataset(config, split='train')
+#     data_label = data[0]
+#     data, label = data_label
+#     flame_param, audio = data
+#     print(flame_param.shape)
+#     print(audio.shape)
+#     print(audio.dtype)
+#     print(flame_param.dtype)
     
     
