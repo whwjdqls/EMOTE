@@ -52,10 +52,8 @@ def train_one_epoch(config,FLINT_config, epoch, model, FLAME, optimizer, data_lo
         emotion, intensity, gender, actor_id = list_to(label, device)
         # condition ([emotion, intensity, identity]])   
         condition = label_to_condition_MEAD(emotion, intensity, actor_id)
-        print('audio', audio.shape, 'condition', condition.shape)
-            
         params_pred = model(audio, condition) # batch, seq_len, 53
-        print("params_pred", params_pred.shape)
+
         exp_param_pred = params_pred[:,:,:50].to(device)
         jaw_pose_pred = params_pred[:,:,50:53].to(device)
         exp_param_target = flame_param[:,:,:50].to(device)
@@ -63,9 +61,7 @@ def train_one_epoch(config,FLINT_config, epoch, model, FLAME, optimizer, data_lo
 
         vertices_pred = flame.get_vertices_from_flame(FLINT_config, FLAME, exp_param_pred, jaw_pose_pred, device)
         vertices_target = flame.get_vertices_from_flame(FLINT_config, FLAME, exp_param_target, jaw_pose_target, device)
-        print('exp_param_pred', exp_param_pred.shape, 'jaw_pose_pred', jaw_pose_pred.shape)
-        print('exp_param_target', exp_param_target.shape, 'jaw_pose_target', jaw_pose_target.shape)
-        print('vertices_pred', vertices_pred.shape, 'vertices_target', vertices_target.shape)
+
             
         loss = EMOTE.calculate_vertice_loss(vertices_pred, vertices_target)
         optimizer.zero_grad() 
@@ -101,23 +97,23 @@ def val_one_epoch(config,FLINT_config, epoch, model, FLAME, data_loader, device)
             emotion, intensity, gender, actor_id = list_to(label, device)
             # condition ([emotion, intensity, identity]])   
             condition = label_to_condition_MEAD(emotion, intensity, actor_id)
-            print('audio', audio.shape, 'condition', condition.shape)
             
             params_pred = model(audio, condition) 
-            print('params_pred', params_pred.shape)
+
             
             # 11-21 JB BUGGGGGG
             # as we are using the while clip for validation set, 
             # sometimes the exp_pred is longer thatn exp_target as audio samples are longer
             # for now, we are just truncating the pred to match the target -> this can be improved
             min_len = min(params_pred.shape[1], flame_param.shape[1])
+            # also, temporal len should be divisible by 4 due to EMOTEs quant factor
+            min_len = min_len - (min_len % 4)
             
             exp_param_pred = params_pred[:,:min_len,:50].to(device)
             jaw_pose_pred = params_pred[:,:min_len,50:53].to(device)
             exp_param_target = flame_param[:,:min_len,:50].to(device)
             jaw_pose_target = flame_param[:,:min_len,50:53].to(device)
-            print('exp_param_pred', exp_param_pred.shape, 'jaw_pose_pred', jaw_pose_pred.shape)
-            print('exp_param_target', exp_param_target.shape, 'jaw_pose_target', jaw_pose_target.shape)
+
             
             vertices_pred = flame.get_vertices_from_flame(FLINT_config, FLAME, exp_param_pred, jaw_pose_pred, device)
             vertices_target = flame.get_vertices_from_flame(FLINT_config, FLAME, exp_param_target, jaw_pose_target, device)
