@@ -179,27 +179,25 @@ class EMOTE(nn.Module) :
         return output
 
     def decode(self, sample) :
-        print("---decoder---")
+
         output = self.transformer_encoder(sample) # (BS,64,256)
-        print('transformer_encoder', output.shape)
+
         output = self.squasher(output) # (BS,16,128)
-        print('squasher', output.shape)
+
         # use the _forward function in the decoder which expands by quant factor 4
         output = self.decoder.decoder._forward(output) 
-        print('decoder', output.shape)
-        print("---decoder end---")
+
         return output
 
     def forward(self, audio, condition) :
-        print("---forward---")
+
         audio_embedding = self.encode_audio(audio) # (BS,64,128)
-        print('audio_embedding', audio_embedding.shape)
+
         repeat_num = audio_embedding.shape[1]
         style_embedding = self.encode_style(condition).repeat(1,repeat_num,1) # (BS,64,128)
-        print('style_embedding', style_embedding.shape)
+
         styled_audio_cat = torch.cat([audio_embedding, style_embedding], dim=-1) # (BS,64,256)
-        print('styled_audio_cat', styled_audio_cat.shape)
+
         output = self.decode(styled_audio_cat) # (BS,128,53)
-        print('output', output.shape)
-        print("---forward end---")
+
         return output # (BS,128,53)

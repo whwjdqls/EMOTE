@@ -98,16 +98,18 @@ def val_one_epoch(config,FLINT_config, epoch, model, FLAME, data_loader, device)
             # as we are using the while clip for validation set, 
             # sometimes the time dimension of the audio latent and 
             # exp param are different
-            # for now we match this by cutting the audio (usaullay longer)
+            # for now we match this by cutting the longer one
+            audio_len = audio.shape[1]
             seq_len = flame_param.shape[1]
+            min_len = min(int(audio_len / 16_000 * 30), seq_len)
             # also, temporal len should be divisible by 4 due to EMOTEs quant factor
-            seq_len = seq_len - (seq_len % 4)
+            min_len = min_len - (min_len % 4)
             # seq_len is 30 fps and audio sample rate is 16k
             # so, audio len should be seq_len / 30 * 16000
             # ex ) 180 seq_len (6 sec) -> 180 / 30 * 16000 = 96000 (6 sec)
-            audio_len = int(seq_len / 30 * 16000)
+            audio_len = int(min_len / 30 * 16000)
             audio = audio[:,:audio_len]
-
+            flame_param = flame_param[:,:min_len,:]
             
             emotion, intensity, gender, actor_id = list_to(label, device)
             # condition ([emotion, intensity, identity]])   
@@ -147,10 +149,10 @@ def main(args, config):
     
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     print('using device', device)
     
     seed_everything(42)
+    
     # loading FLINT checkpoint 
     FLINT_config_path = config['motionprior_config']['config_path']
     
@@ -170,13 +172,7 @@ def main(args, config):
     FLAME_train = flame.FLAME(config, split='train')
     FLAME_val = flame.FLAME(config, split='val')
 
-    
-    print("talkingHead state dict and shapes")
-    for name, param in TalkingHead.named_parameters():
-        print(name, param.shape)
-        
     print("Loading Dataset...")
-    # train_dataset = dataset.FlameDataset(config)
     train_dataset = talkingheaddataset.TalkingHeadDataset(config, split='train')
     data, labels = train_dataset[0]
 
