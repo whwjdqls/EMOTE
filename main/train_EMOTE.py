@@ -170,9 +170,10 @@ def main(args, config):
     # this can be improved by making FLAME invariant to batch size 
     # also, FLAME is currently initialized by EMOTE_config
     # I am not sure if this is the best way to do it
-    FLAME_train = flame.FLAME(config, split='train')
-    FLAME_val = flame.FLAME(config, split='val')
-
+    # FLAME_train = flame.FLAME(config, split='train')
+    # FLAME_val = flame.FLAME(config, split='val')
+    FLAME_train = flame.FLAME(config, batch_size=config["training"]["batch_size"])
+    FLAME_val = flame.FLAME(config, batch_size=config["val"]["batch_size"])
     ## lipreading model
     # LOSS_config = FLINT_config['loss']
     # lip_reading_model = LipReadingLoss(device, LOSS_config, loss=LOSS_config['lip_reading_loss']['metric'])

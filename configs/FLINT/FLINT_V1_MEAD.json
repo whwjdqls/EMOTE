@@ -26,9 +26,9 @@
       "shape_params" : 100,
       "expression_params" : 50,
       "use_3D_translation" : true,
-      "static_landmark_embedding_path" : "/home/whwjdqls99/EMOTE/models/flame_models/flame_static_embedding.pkl",
-      "dynamic_landmark_embedding_path" : "/home/whwjdqls99/EMOTE/models/flame_models/flame_dynamic_embedding.npy",
-      "flame_model_path" : "/home/whwjdqls99/EMOTE/models/flame_models/generic_model.pkl"
+      "static_landmark_embedding_path" : "../models/flame_models/flame_static_embedding.pkl",
+      "dynamic_landmark_embedding_path" : "../models/flame_models/flame_dynamic_embedding.npy",
+      "flame_model_path" : "../models/flame_models/generic_model.pkl"
     },
     "transformer_config":{
       "in_dim": 53, 

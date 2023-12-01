@@ -66,7 +66,7 @@
     },
     "motionprior_config":{
       "config_path" : "../configs/FLINT/FLINT_V1_MEAD.json",
-      "checkpoint_path" : "../checkpoints/TVAE_99.pth"
+      "checkpoint_path" : "/workspace/audio2mesh/assets/MotionPrior/models/FLINT/checkpoints/model-epoch=0120-val/loss_total=0.131580308080.ckpt"
     },
     "audio_config":{
       "model_specifier": "facebook/wav2vec2-base-960h" ,
@@ -99,7 +99,7 @@
         "flame_lmk_embedding_path": "FLAME/geometry/landmark_embedding.npy"},
       "style_embedding":{
         "n_intensities": 3,
-        "n_identities": 45,
+        "n_identities": 31,
         "n_expression": 9}
     }
 

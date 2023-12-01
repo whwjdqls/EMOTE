@@ -40,17 +40,17 @@ class FLAME(nn.Module):
     which outputs the a mesh and 3D facial landmarks
     """
 
-    def __init__(self, config, split):
+    def __init__(self, config, batch_size):
         super(FLAME, self).__init__()
         print("creating the FLAME Decoder")
         with open(config["flame_config"]["flame_model_path"], "rb") as f:
             self.flame_model = Struct(**pickle.load(f, encoding="latin1"))
         self.NECK_IDX = 1
-        if split == "train":
-            BS = config["training"]["batch_size"]
-        elif split == "val":
-            BS = config["validation"]["batch_size"]
-        self.batch_size = BS
+        # if split == "train":
+        #     BS = config["training"]["batch_size"]
+        # elif split == "val":
+        #     BS = config["validation"]["batch_size"]
+        self.batch_size = batch_size
         self.dtype = torch.float32
         self.use_face_contour = config["flame_config"]["use_face_contour"]
         self.faces = self.flame_model.f
