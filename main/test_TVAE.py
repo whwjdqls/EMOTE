@@ -11,7 +11,7 @@ import torch
 from datasets import dataset
 from models import VAEs
 from models.flame_models import flame
-from utils import extra.seed_everything as seed_everything
+from utils.extra import seed_everything
 
 def get_recon_from_path(config, TVAE, FLAME, device, path):
     params = np.load(path)
@@ -46,6 +46,7 @@ def main(args):
     print("Loading Checkpoint...")
     checkpoint = torch.load(args.checkpoint, map_location=device)
     TVAE.load_state_dict(checkpoint['TVAE'])
+    
     
     
 if __name__ == "__main__":

@@ -173,8 +173,6 @@ def main(args, config):
     FLAME_train = flame.FLAME(config, split='train')
     FLAME_val = flame.FLAME(config, split='val')
 
-<<<<<<< HEAD
-=======
     ## lipreading model
     # LOSS_config = FLINT_config['loss']
     # lip_reading_model = LipReadingLoss(device, LOSS_config, loss=LOSS_config['lip_reading_loss']['metric'])
@@ -185,7 +183,6 @@ def main(args, config):
     for name, param in TalkingHead.named_parameters():
         print(name, param.shape)
         
->>>>>>> 17cd25cccb9fba2f473563825334a372ce7d8d43
     print("Loading Dataset...")
     train_dataset = talkingheaddataset.TalkingHeadDataset(config, split='train')
     data, labels = train_dataset[0]
