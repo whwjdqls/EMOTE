@@ -15,6 +15,7 @@ from datasets import talkingheaddataset
 from models import VAEs, EMOTE
 from models.flame_models import flame
 from utils.extra import seed_everything
+# from utils.loss import LipReadingLoss
 
 def list_to(list_,device):
     """move a list of tensors to device
@@ -170,6 +171,11 @@ def main(args, config):
     FLAME_train = flame.FLAME(config, split='train')
     FLAME_val = flame.FLAME(config, split='val')
 
+    ## lipreading model
+    # LOSS_config = FLINT_config['loss']
+    # lip_reading_model = LipReadingLoss(device, LOSS_config, loss=LOSS_config['lip_reading_loss']['metric'])
+    # lip_reading_model.to(device).eval()
+    # lip_reading_model.requires_grad_(False)
     
     print("talkingHead state dict and shapes")
     for name, param in TalkingHead.named_parameters():

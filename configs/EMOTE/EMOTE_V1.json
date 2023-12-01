@@ -11,6 +11,37 @@
       "save_step" : 3,
       "save_dir" : "/scratch/jungbin/Audio_face_data/checkpoints/EMOTE/MEAD"
     },
+    "loss": {
+      "lip_reading_loss": {
+        "metric": "cosine_similarity",
+        "weight": 2.5e-05,
+        "trainable": false,
+        "normalize_features": false,
+        "target_method_image": "EMICA_mead_mp_lr_mse_15",
+        "mask_invalid": "mediapipe_landmarks",
+        "use_real_video_for_reference": false,
+        "E2E":{
+          "input":{
+            "modality":"video",
+            "v_fps":25
+          },
+          "model":{
+            "v_fps":25,
+            "model_path":"data/LRS3_V_WER32.3/model.pth",
+            "model_conf":"data/LRS3_V_WER32.3/model.json"
+          },
+          "decode":{
+            "beam_size":1,
+            "penalty":0.5,
+            "maxlenratio":0.0,
+            "minlenratio":0.0,
+            "ctc_weight":0.1,
+            "lm_weight":0.6
+          }
+        }
+      }
+
+    },
     "validation":{
       "batch_size" : 1
     },
