@@ -1,3 +1,0 @@
-[submodule "external_models/spectre"]
-	path = external_models/spectre
-	url = https://github.com/Heerozh/spectre.git
