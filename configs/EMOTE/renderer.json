@@ -1,0 +1,11 @@
+{   
+    "type": "fixed_view",
+    "face_mask_path": "FLAME/mask/uv_face_mask.png",
+    "face_eye_mask_path": "FLAME/mask/uv_face_eye_mask.png",
+    "uv_size": 256,
+    "image_size": 224,
+    "topology_path": "FLAME/geometry/head_template.obj",
+    "n_light": 27,
+    "project_landmarks": true,
+    "cut_out_mouth": true
+}

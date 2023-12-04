@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import math
-from transformers import Wav2Vec2Config, Wav2Vec2Processor, AutoConfig
+# from transformers import Wav2Vec2Config, Wav2Vec2Processor, AutoConfig
 from .wav2vec import Wav2Vec2Encoder
 import torch.nn.functional as F
 from .VAEs import TVAE
@@ -186,6 +186,7 @@ class EMOTE(nn.Module) :
 
         # use the _forward function in the decoder which expands by quant factor 4
         output = self.decoder.decoder._forward(output) 
+        print(f'decoder output : {output.shape}')
 
         return output
 
