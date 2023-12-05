@@ -6,6 +6,7 @@ from transformers import Wav2Vec2Config, Wav2Vec2Processor, AutoConfig
 from .wav2vec import Wav2Vec2Encoder
 import torch.nn.functional as F
 from .TVAE_inferno import TVAE
+from .temporal.TransformerMasking import init_faceformer_biased_mask_future
 # import copy
 # import einops
 # from .sequence_encoder import LinearSequenceEncoder, ConvSquasher, StackLinearSquash
@@ -160,10 +161,11 @@ class BertPriorDecoder(nn.Module):
         # print(f'style dim : {style_dim}')
         self.obj_vector = LinearEmotionCondition(style_dim, decoder_config['feature_dim'])
         ## decoder
+        #mask
+        max_len = 1200
+        self.biased_mask = init_faceformer_biased_mask_future(num_heads = decoder_config['nhead'], max_seq_len = max_len, period=decoder_config['period'])
         # transformer encoder
-        ########################### debug
         dim_factor = 2
-        ########################### debug
         encoder_layer = torch.nn.TransformerEncoderLayer(
                     d_model=decoder_config['feature_dim'] * dim_factor, 
                     nhead=decoder_config['nhead'], dim_feedforward=dim_factor*decoder_config['feature_dim'], 
@@ -205,8 +207,12 @@ class BertPriorDecoder(nn.Module):
         return output
 
     def decode(self, sample) :
-
-        output = self.bert_decoder(sample) # (BS,64,256)
+        
+        mask = self.biased_mask[:, :sample.shape[1], :sample.shape[1]].clone().detach().to(device=sample.device)
+        if mask.ndim == 3: # the mask's first dimension needs to be num_head * batch_size
+            mask = mask.repeat(sample.shape[0], 1, 1)
+        
+        output = self.bert_decoder(sample, mask=mask) # (BS,64,256)
         output = self.squasher(output) # (BS,16,128)
         # use the _forward function in the decoder which expands by quant factor 4
         output = self.motion_prior.motion_decoder._forward(output) 
