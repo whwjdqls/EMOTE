@@ -20,7 +20,7 @@ import torch.nn.functional as F
 from skimage.io import imread
 import imageio
 import util
-
+from pytorch3d.renderer import look_at_view_transform,FoVPerspectiveCameras
 def set_rasterizer(type = 'pytorch3d'):
     if type == 'pytorch3d':
         global Meshes, load_obj, rasterize_meshes
@@ -94,6 +94,8 @@ class Pytorch3dRasterizer(nn.Module):
         # print(image_size)
         # import ipdb; ipdb.set_trace()
         return pixel_vals
+
+
 if __name__ =='__main__':
     set_rasterizer()
     obj_filename = '/workspace/audio2mesh/assets/FLAME/geometry/head_template.obj'
@@ -104,7 +106,21 @@ if __name__ =='__main__':
     faces = faces.verts_idx[None,...]
     print(verts.shape, faces.shape, uvcoords.shape, uvfaces.shape)
 
+    uvcoords = torch.cat([uvcoords, uvcoords[:,:,0:1]*0.+1.], -1) #[bz, ntv, 3]
+    uvcoords = uvcoords*2 - 1; uvcoords[...,1] = -uvcoords[...,1]
+    face_uvcoords = util.face_vertices(uvcoords, uvfaces)
 
+    R, T = look_at_view_transform(0.8, 0, 180) 
+    cameras = FoVPerspectiveCameras(device=device, R=R, T=T)
+    trans_verts = util.batch_orth_proj(verts, codedict['cam']); trans_verts[:,:,1:] = -trans_verts[:,:,1:]
+    batch_size = verts.shape[0]
+    ## rasterizer near 0 far 100. move mesh so minz larger than 0
+    transformed_vertices[:,:,2] = transformed_vertices[:,:,2] + 10
+    # attributes
+    face_vertices = util.face_vertices(vertices, self.faces.expand(batch_size, -1, -1))
+    normals = util.vertex_normals(vertices, self.faces.expand(batch_size, -1, -1)); face_normals = util.face_vertices(normals, self.faces.expand(batch_size, -1, -1))
+    transformed_normals = util.vertex_normals(transformed_vertices, self.faces.expand(batch_size, -1, -1)); transformed_face_normals = util.face_vertices(transformed_normals, self.faces.expand(batch_size, -1, -1))
+    
 class SRenderY(nn.Module):
     def __init__(self, image_size, obj_filename, uv_size=256, rasterizer_type='pytorch3d'):
         super(SRenderY, self).__init__()

@@ -27,8 +27,8 @@
           },
           "model":{
             "v_fps":25,
-            "model_path":"data/LRS3_V_WER32.3/model.pth",
-            "model_conf":"data/LRS3_V_WER32.3/model.json"
+            "model_path":"../externals/spectre/data/LRS3_V_WER32.3/model.pth",
+            "model_conf":"../externals/spectre/data/LRS3_V_WER32.3/model.json"
           },
           "decode":{
             "beam_size":1,

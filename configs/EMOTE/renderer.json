@@ -7,5 +7,6 @@
     "topology_path": "FLAME/geometry/head_template.obj",
     "n_light": 27,
     "project_landmarks": true,
-    "cut_out_mouth": true
+    "cut_out_mouth": true,
+    "fixed_replacement_path": "/workspace/audio2mesh/assets/FLAME/geometry/fixed_uv_displacements/fixed_displacement_256.npy"
 }

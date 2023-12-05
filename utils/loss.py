@@ -1,13 +1,17 @@
-from inferno.utils.other import get_path_to_externals
+# from inferno.utils.other import get_path_to_externals
 from pathlib import Path
 import sys
 import torch
-from inferno.models.temporal.Renderers import cut_mouth_vectorized
+import json
+# from inferno.models.temporal.Renderers import cut_mouth_vectorized
 '''
 E2E should be implemented from same version that LipReading used
 '''
+sys.path.append('../externals/spectre/external/Visual_Speech_Recognition_for_Multiple_Languages')
+# from externals.spectre.external.Visual_Speech_Recognition_for_Multiple_Languages.espnet.nets.pytorch_backend.e2e_asr_transformer import E2E
 from espnet.nets.pytorch_backend.e2e_asr_transformer import E2E
 import argparse
+import torchvision.transforms as t
 
 class LipReadingNet(torch.nn.Module):
 
@@ -40,7 +44,8 @@ class LipReadingNet(torch.nn.Module):
         self.train_args = argparse.Namespace(**args)
 
         # define lip reading model
-        self.lip_reader = E2E(model_path, self.train_args)
+        # self.lip_reader = E2E(model_path, self.train_args)
+        self.lip_reader = E2E(odim, self.train_args)
         self.lip_reader.load_state_dict(torch.load(model_path))
         # self.lip_reader.to(devivce).eval()
 
@@ -48,11 +53,16 @@ class LipReadingNet(torch.nn.Module):
         (mean, std) = (0.421, 0.165)
 
         # ---- transform mouths before going into the lipread network for loss ---- #
-        self.mouth_transform = Compose([
-            Normalize(0.0, 1.0),
-            CenterCrop(crop_size),
-            Normalize(mean, std),
-            Identity()]
+        # self.mouth_transform = t.Compose([
+        #     t.Normalize(0.0, 1.0),
+        #     t.CenterCrop(crop_size),
+        #     t.Normalize(mean, std),
+        #     t.Identity()]
+        # )
+        self.mouth_transform = t.Compose([
+            t.Normalize(0.0, 1.0),
+            t.CenterCrop(crop_size),
+            t.Normalize(mean, std)]
         )
 
 
@@ -177,13 +187,13 @@ class LipReadingLoss(torch.nn.Module):
             raise ValueError(f"Unknown loss function: {self.loss}")
         return lr
 
-    def crop_mouth(self, image, landmarks): 
-        return cut_mouth_vectorized(image, 
-                                    landmarks, 
-                                    convert_grayscale=True, 
-                                    mouth_window_margin = self.mouth_window_margin, 
-                                    mouth_landmark_start_idx = self.mouth_landmark_start_idx, 
-                                    mouth_landmark_stop_idx = self.mouth_landmark_stop_idx, 
-                                    mouth_crop_height = self.mouth_crop_height, 
-                                    mouth_crop_width = self.mouth_crop_width
-                                    )
+    # def crop_mouth(self, image, landmarks): 
+    #     return cut_mouth_vectorized(image, 
+    #                                 landmarks, 
+    #                                 convert_grayscale=True, 
+    #                                 mouth_window_margin = self.mouth_window_margin, 
+    #                                 mouth_landmark_start_idx = self.mouth_landmark_start_idx, 
+    #                                 mouth_landmark_stop_idx = self.mouth_landmark_stop_idx, 
+    #                                 mouth_crop_height = self.mouth_crop_height, 
+    #                                 mouth_crop_width = self.mouth_crop_width
+    #                                 )

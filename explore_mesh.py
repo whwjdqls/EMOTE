@@ -18,26 +18,29 @@ from pytorch3d.renderer import (
     TexturesVertex
 )
 device = torch.device("cuda:0")
-# path = "/workspace/audio2mesh/emoca/gdl_apps/EMOCA/demos/image_output/EMOCA_v2_lr_mse_20/0000_0000_0000/EMOCA_v2_lr_mse_20/inputs00/mesh_coarse.obj"
-path = '/workspace/audio2mesh/assets/FLAME/geometry/head_template.obj'
-# mesh = load_obj(path, path=True)
+result_path = "/workspace/audio2mesh/emoca/gdl_apps/EMOCA/demos/image_output/EMOCA_v2_lr_mse_20/0000_0000_0000/EMOCA_v2_lr_mse_20/inputs00/mesh_coarse.obj"
+template_path = '/workspace/audio2mesh/assets/FLAME/geometry/head_template.obj'
+mesh = load_objs_as_meshes([template_path], device=device)
 
 
-
-verts, faces, aux = load_obj(path)
-uvcoords = aux.verts_uvs[None, ...]      # (N, V, 2)
-uvfaces = faces.textures_idx[None, ...] # (N, F, 3)
-faces = faces.verts_idx[None,...]
-print(verts.shape, faces.shape, uvcoords.shape, uvfaces.shape)
-# exit()
-mesh = load_objs_as_meshes([path], device=device)
-print(mesh)
-
+# verts, faces, aux = load_obj(path)
+# uvcoords = aux.verts_uvs[None, ...]      # (N, V, 2)
+# uvfaces = faces.textures_idx[None, ...] # (N, F, 3)
+# faces = faces.verts_idx[None,...]
+# print(verts.shape, faces.shape, uvcoords.shape, uvfaces.shape)
+# # exit()
+result_verts,result_faces,result_aux  = load_obj(result_path, device=device)
+print(result_verts)
+template_verts,template_faces,template_aux = load_obj(template_path, device=device)
+print(template_verts)
 # Initialize a camera.
 # With world coordinates +Y up, +X left and +Z in, the front of the cow is facing the -Z direction. 
 # So we move the camera by 180 in the azimuth direction so it is facing the front of the cow. 
 # R, T = look_at_view_transform(2.7, 0, 180) 
-R, T = look_at_view_transform(2, 1, 0)
+R, T = look_at_view_transform(2, 20., 0)
+T = torch.tensor([[-0., -1.32, 0.80]])
+print(T)
+print(R)
 znear = torch.tensor(0.01).to(device)
 cameras = FoVPerspectiveCameras(znear=znear, device=device, R=R, T=T)
 
@@ -81,7 +84,7 @@ print(images.shape)
 plt.figure(figsize=(10, 10))
 plt.imshow(images[0, ..., :3].cpu().numpy())
 # save plt image
-plt.savefig('test_0.5_znear0.01.png')
+plt.savefig(f'test_{T[0][0]}_{T[0][1]}_{T[0][2]}_15.png')
 
 
 pred_image  = torch.zeros_like(images[0, ..., :3]).to(device)
