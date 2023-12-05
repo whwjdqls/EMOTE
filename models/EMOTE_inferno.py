@@ -173,6 +173,8 @@ class BertPriorDecoder(nn.Module):
                     dropout=decoder_config['dropout'], batch_first=True
         )        
         self.bert_decoder = torch.nn.TransformerEncoder(encoder_layer, num_layers=decoder_config['num_layers'])
+        # decoder.decoder
+        self.decoder = nn.Linear(dim_factor*decoder_config['feature_dim'], decoder_config['feature_dim'])
         # Squasher
         if decoder_config['squash_after'] : #(linear stack, 128 *2, 128,3, 4)
             self.squasher_2 = _create_squasher(decoder_config['squash_type'], decoder_config['feature_dim']*dim_factor, decoder_config['feature_dim'], decoder_config['quant_factor'], decoder_config['latent_frame_size'])
@@ -184,12 +186,12 @@ class BertPriorDecoder(nn.Module):
         # Temporal VAE decoder
         # 11-21
         # loading all FLINT for now, but we can change this to load only the decoder
-        motion_prior = TVAE(FLINT_config)
+        self.motion_prior = TVAE(FLINT_config)
         decoder_ckpt = torch.load(FLINT_ckpt)
         if 'state_dict' in decoder_ckpt:
             decoder_ckpt = decoder_ckpt['state_dict']
-        motion_prior.load_state_dict(decoder_ckpt)
-        self.motion_prior = motion_prior
+        self.motion_prior.load_state_dict(decoder_ckpt)
+        # self.motion_prior = motion_prior
         
         # freeze decoder
         for param in self.motion_prior.parameters():
