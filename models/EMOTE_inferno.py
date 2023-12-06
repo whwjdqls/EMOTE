@@ -96,6 +96,8 @@ class StackLinearSquash(nn.Module): #( 128 *2, 4, 128)
         
     def forward(self, x):
         B, T, F = x.shape # (BS,64,256)
+        print(f'T : {T}')
+        print(f'latent_frame_size : {self.latent_frame_size}')
         # input B, T, F -> B, T // latent_frame_size, F * latent_frame_size
         assert T % self.latent_frame_size == 0, "T must be divisible by latent_frame_size"
         T_latent = T // self.latent_frame_size
@@ -112,7 +114,7 @@ class LinearEmotionCondition(nn.Module):
         self.map = nn.Linear(condition_dim, output_dim)
 
     def forward(self, sample):
-        return self.map(emotion)
+        return self.map(sample)
 
 
 
@@ -145,7 +147,7 @@ class EMOTE(nn.Module) :
     def forward(self, audio, condition) :
 
         audio_embedding = self.encode_audio(audio) # (BS,64,128)
-        audio_embedding = self.LinearSequenceEncoder(audio_embedding)
+        # audio_embedding = self.LinearSequenceEncoder(audio_embedding)
         output = self.sequence_decoder(condition, audio_embedding) # (BS,128,53)
 
         return output # (BS,128,53)
@@ -185,13 +187,18 @@ class BertPriorDecoder(nn.Module):
 
         # Temporal VAE decoder
         # 11-21
-        # loading all FLINT for now, but we can change this to load only the decoder
-        self.motion_prior = TVAE(FLINT_config)
+        # Load only decoder from TVAE
+        self.motion_prior = TVAE(FLINT_config).motion_decoder
         decoder_ckpt = torch.load(FLINT_ckpt)
         if 'state_dict' in decoder_ckpt:
             decoder_ckpt = decoder_ckpt['state_dict']
-        self.motion_prior.load_state_dict(decoder_ckpt)
-        # self.motion_prior = motion_prior
+        # new_decoder_ckpt = decoder_ckpt.copy()
+        motion_decoder_state_dict = {
+            key.replace('motion_decoder.', ''): value
+            for key, value in decoder_ckpt.items()
+            if key.startswith('motion_decoder.')
+        }
+        self.motion_prior.load_state_dict(motion_decoder_state_dict)
         
         # freeze decoder
         for param in self.motion_prior.parameters():
@@ -215,9 +222,11 @@ class BertPriorDecoder(nn.Module):
             mask = mask.repeat(sample.shape[0], 1, 1)
         
         output = self.bert_decoder(sample, mask=mask) # (BS,64,256)
-        output = self.squasher(output) # (BS,16,128)
+        output = self.squasher_2(output) # (BS,16,128)
         # use the _forward function in the decoder which expands by quant factor 4
-        output = self.motion_prior.motion_decoder._forward(output) 
+        # output = self.motion_prior.motion_decoder._forward(output) 
+        output = self.motion_prior._forward(output) 
+        # output = self.motion_prior._forward(output)
         return output
 
     def forward(self, condition, audio_embedding) :
