@@ -179,9 +179,9 @@ class BertPriorDecoder(nn.Module):
         self.decoder = nn.Linear(dim_factor*decoder_config['feature_dim'], decoder_config['feature_dim'])
         # Squasher
         if decoder_config['squash_after'] : #(linear stack, 128 *2, 128,3, 4)
-            self.squasher_2 = _create_squasher(decoder_config['squash_type'], decoder_config['feature_dim']*dim_factor, decoder_config['feature_dim'], decoder_config['quant_factor'], decoder_config['latent_frame_size'])
+            self.squasher_2 = _create_squasher(decoder_config['squash_type'], decoder_config['feature_dim'], decoder_config['feature_dim'], decoder_config['quant_factor'], decoder_config['latent_frame_size'])
         elif decoder_config['squash_before'] :
-            self.squasher_1 = _create_squasher(decoder_config['squash_type'], decoder_config['feature_dim']*dim_factor, decoder_config['feature_dim']*dim_factor, decoder_config['quant_factor'], decoder_config['latent_frame_size'])
+            self.squasher_1 = _create_squasher(decoder_config['squash_type'], decoder_config['feature_dim'], decoder_config['feature_dim']*dim_factor, decoder_config['quant_factor'], decoder_config['latent_frame_size'])
         else : 
             raise ValueError("Unknown squasher type")
 
@@ -222,10 +222,13 @@ class BertPriorDecoder(nn.Module):
             mask = mask.repeat(sample.shape[0], 1, 1)
         
         output = self.bert_decoder(sample, mask=mask) # (BS,64,256)
+        output = self.decoder(sample) # (BS,16,128)
+        print(f'decoder output : {output.shape}')
         output = self.squasher_2(output) # (BS,16,128)
+        print(f'squasher output : {output.shape}')
         # use the _forward function in the decoder which expands by quant factor 4
         # output = self.motion_prior.motion_decoder._forward(output) 
-        output = self.motion_prior._forward(output) 
+        output = self.motion_prior.forward(output) 
         # output = self.motion_prior._forward(output)
         return output
 

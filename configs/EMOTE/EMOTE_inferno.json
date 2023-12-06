@@ -89,7 +89,7 @@
       "squash_after": true,
       "squash_type": "stack_linear",
       "quant_factor": 3,
-      "latent_frame_size" : 4,
+      "latent_frame_size" : 8,
       "period": 30,
       "positional_encoding":{
         "type": "none"},
