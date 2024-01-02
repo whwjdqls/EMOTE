@@ -8,7 +8,6 @@ checkpoints/
 *.ckpt
 ./checkpoints/*
 *.png
-*.sh
 ./wandb/
 models/EmotionRecognition
 models/TalkingHead
