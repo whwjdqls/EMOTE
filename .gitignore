@@ -10,6 +10,10 @@ checkpoints/
 *.png
 *.sh
 ./wandb/
+models/EmotionRecognition
+models/TalkingHead
+models/VideoEmotionRecognition
+
 # Ignore IDE-specific files and directories
 .idea/
 .vscode/
