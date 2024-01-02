@@ -42,9 +42,9 @@
       },
       "emotion_video_loss": {
         "weight": 2.5e-06,
-        "network_path": "VideoEmotionRecognition/models/VideoEmotionAndIntensityClassifier",
+        "network_path": "models/VideoEmotionRecognition/models/VideoEmotionAndIntensityClassifier",
         "use_real_video_for_reference": true,
-        "feature_extractor_path": "EmotionRecognition/image_based_networks/ResNet50",
+        "feature_extractor_path": "models/EmotionRecognition/image_based_networks/ResNet50",
         "metric": "cosine_similarity",
         "trainable": false,
         "normalize_features": false,
