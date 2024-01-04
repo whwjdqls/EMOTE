@@ -12,6 +12,14 @@ checkpoints/
 models/EmotionRecognition
 models/TalkingHead
 models/VideoEmotionRecognition
+outputs/
+inputs/
+datasets/wandb/
+debugging_files/
+results/
+main/wandb/
+*.npy
+externals/
 
 # Ignore IDE-specific files and directories
 .idea/
