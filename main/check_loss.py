@@ -13,8 +13,10 @@ video_emotion_loss = create_video_emotion_loss(LOSS_config)
 video_emotion_loss.to(device).eval()
 video_emotion_loss.requires_grad_(False)
 
-pred_image = torch.randn(10,4,256,256,3) #(BS,T,256,256,3)
-gt_image = torch.randn(10,4,256,256,3)
+# pred_image = torch.randn(10,4,3,256,256).to("cuda:0") #(BS,T,256,256,3)
+pred_image = torch.randn(10,4,3,224,224).to("cuda:0")
+# gt_image = torch.randn(10,4,3,256,256).to("cuda:0")
+gt_image = torch.randn(10,4,3,224,224).to("cuda:0")
 
 
 # B = sample["predicted_vertices"].shape[0] # total batch size
@@ -67,4 +69,4 @@ loss_values = video_emotion_loss.compute_loss(input_images = gt_vid, output_imag
 #     loss_values[cam_name] = self.neural_losses.video_emotion_loss.compute_loss(
 #         input_emotion_features=gt_emo_feature, output_images=pred_vid,  mask=mask_
 #         )
-loss_value = sum(loss_values.values()) / len(loss_values)
+print(f'loss values : {loss_values}')

@@ -20,6 +20,7 @@ results/
 main/wandb/
 *.npy
 externals/
+*.sh
 
 # Ignore IDE-specific files and directories
 .idea/

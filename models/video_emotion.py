@@ -430,6 +430,14 @@ class EmotionRecognitionBaseModule(pl.LightningModule):
         """
         super().__init__()
         self.config = config
+        # properties
+        self.predicts_expression = self.config.model.predict_expression
+        self.predicts_valence = self.config.model.predict_valence
+        self.predicts_arousal = self.config.model.predict_arousal
+        if 'predict_AUs' in self.config.model.keys() and self.config.model.predict_AUs:
+            self.predicts_AUs = self.config.model.predict_AUs
+        else :
+            self.predicts_AUs = 0
 
         # if 'v_activation' in config.model.keys():
         #     self.v_activation = class_from_str(self.config.model.v_activation, sys.modules[__name__])
@@ -471,17 +479,17 @@ class EmoCnnModule(EmotionRecognitionBaseModule):
         self.n_expression = config.data.n_expression if 'n_expression' in config.data.keys() else 9
 
         self.num_outputs = 0
-        if self.config.model.predict_expression:
+        if self.predicts_expression:
             self.num_outputs += self.n_expression
             self.num_classes = self.n_expression
 
-        if self.config.model.predict_valence:
+        if self.predicts_valence:
             self.num_outputs += 1
 
-        if self.config.model.predict_arousal:
+        if self.predicts_arousal:
             self.num_outputs += 1
 
-        if 'predict_AUs' in self.config.model.keys() and self.config.model.predict_AUs:
+        if self.predicts_AUs:
             self.num_outputs += self.config.model.predict_AUs
 
         if config.model.backbone == "resnet50":
@@ -505,12 +513,13 @@ class EmoCnnModule(EmotionRecognitionBaseModule):
         return self.last_feature_size
 
     def _forward(self, images):
-        output = self.backbone(images)
+        output = self.backbone(images) #(BS*T,2048,1,1)
         emo_feat_2 = output
-        output = self.linear(output.view(output.shape[0], -1))
+        output = self.linear(output.view(output.shape[0], -1)) #(BS*T,)
+        print(f'output : {output.shape}')
 
         out_idx = 0
-        if self.predicts_expression():
+        if self.predicts_expression:
             expr_classification = output[:, out_idx:(out_idx + self.n_expression)]
             if self.exp_activation is not None:
                 expr_classification = self.exp_activation(expr_classification, dim=1)
@@ -518,7 +527,7 @@ class EmoCnnModule(EmotionRecognitionBaseModule):
         else:
             expr_classification = None
 
-        if self.predicts_valence():
+        if self.predicts_valence:
             valence = output[:, out_idx:(out_idx + 1)]
             if self.v_activation is not None:
                 valence = self.v_activation(valence)
@@ -526,7 +535,7 @@ class EmoCnnModule(EmotionRecognitionBaseModule):
         else:
             valence = None
 
-        if self.predicts_arousal():
+        if self.predicts_arousal:
             arousal = output[:, out_idx:(out_idx + 1)]
             if self.a_activation is not None:
                 arousal = self.a_activation(arousal)
@@ -534,7 +543,8 @@ class EmoCnnModule(EmotionRecognitionBaseModule):
         else:
             arousal = None
 
-        if self.predicts_AUs():
+
+        if self.predicts_AUs:
             num_AUs = self.config.model.predict_AUs
             AUs = output[:, out_idx:(out_idx + num_AUs)]
             if self.AU_activation is not None:
@@ -579,13 +589,13 @@ class EmoCnnModule(EmotionRecognitionBaseModule):
         # expression = self.exp_activation(emotion['expr_classification'], dim=1)
 
         values = {}
-        if self.predicts_valence():
+        if self.predicts_valence:
             values['valence'] = valence.view(-1,1)
-        if self.predicts_arousal():
+        if self.predicts_arousal:
             values['arousal'] = arousal.view(-1,1)
         # values['expr_classification'] = expression
         values['expr_classification'] = emotion['expr_classification']
-        if self.predicts_AUs():
+        if self.predicts_AUs:
             values['AUs'] = emotion['AUs']
 
         values["emo_feat_2"] = emotion["emo_feat_2"]

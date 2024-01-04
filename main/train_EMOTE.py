@@ -109,8 +109,9 @@ def train_one_epoch(config,FLINT_config, epoch, model, FLAME, optimizer, data_lo
                 lip_reading_model.to(device).eval()
                 lip_reading_model.requires_grad_(False)
 
+            # input size of video emotion loss should be (BS,T,3,224,224)
             # if video_emotion_model is None :
-            #     video_emotion_model = 
+            #     video_emotion_model = create_video_emotion(config['loss']['emotion_video_loss'])
             #     video_emotion_model.to(device).eval()
             #     video_emotion_model.requires_grad_(False)
  
