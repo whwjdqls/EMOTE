@@ -2,7 +2,7 @@ import argparse
 import logging
 import os, random
 import sys
-sys.path.append('../') # add parent directory to import modules
+# sys.path.append('../') # add parent directory to import modules
 
 import json
 import numpy as np
@@ -404,8 +404,8 @@ def main(args, config):
     FLAME_val.requires_grad_(False)
 
     print("Loading Dataset...")
-    train_dataset = talkingheaddataset.TalkingHeadDataset_new(config, split='train')
-    #train_dataset = talkingheaddataset.TalkingHeadDataset_new(config, split='debug')
+    # train_dataset = talkingheaddataset.TalkingHeadDataset_new(config, split='train')
+    train_dataset = talkingheaddataset.TalkingHeadDataset_new(config, split='debug')
 
     val_dataset = talkingheaddataset.TalkingHeadDataset_new(config, split='val')
     print('val_dataset', len(val_dataset),'| train_dataset', len(train_dataset))
