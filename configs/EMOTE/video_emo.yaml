@@ -1,0 +1,117 @@
+emotion_video_loss:
+      weight: 2.5e-06
+      network_path: VideoEmotionRecognition/models/VideoEmotionAndIntensityClassifier
+      use_real_video_for_reference: true
+      feature_extractor_path: EmotionRecognition/image_based_networks/ResNet50
+      metric: cosine_similarity
+      trainable: false
+      normalize_features: false
+      target_method_image: EMICA_mead_mp_lr_mse_15
+      mask_invalid: mediapipe_landmarks
+      cfg:
+        data:
+          data_class: MEADPseudo3DDM
+          input_dir: mead_25fps/resampled_videos
+          output_dir: mead_25fps
+          processed_subfolder: processed
+          num_workers: 8
+          image_size: 224
+          scale: 1.25
+          face_detector: mediapipe
+          face_detector_threshold: 0.05
+          include_processed_audio: false
+          include_raw_audio: true
+          preload_videos: false
+          inflate_by_video_size: false
+          ring_type: none
+          ring_size: none
+          drop_last: true
+          training_sampler: uniform
+          landmark_types: mediapipe
+          landmark_sources: original
+          segmentation_source: aligned
+          split: random_by_sequence_sorted_70_15_15
+          train_subjects: []
+          val_subjects: []
+          test_subjects: []
+          read_video: false
+          reconstruction_type:
+          - emoca
+          - spectre
+          return_global_pose: false
+          return_appearance: true
+          average_shape_decode: true
+          emotion_type: resnet50
+          return_emotion_feature: true
+          augmentation: []
+        model:
+          pl_module_class: VideoEmotionClassifier
+          max_epochs: 200
+          min_steps: 7000
+          input_feature_size: 2048
+          output:
+            num_classes:
+            - 8
+            - 3
+          sequence_encoder:
+            type: TransformerSequenceClassifier
+            encoder:
+              type: TransformerEncoder
+              num_layers: 1
+              feature_dim: 256
+              nhead: 8
+              dropout: 0.25
+              activation: gelu
+              max_len: 600
+              positional_encoding:
+                type: none
+                max_len: 600
+              temporal_bias_type: alibi_future
+            pooler:
+              type: TransformerPooler
+              hidden_size: 20
+            temporal_bias_type: false
+          classification_head:
+            type: MultiheadLinearClassificationHead
+            dropout_prob: 0.2
+            category_names:
+            - expression
+            - intensity
+          feature_extractor:
+            type: false
+          resume_training: false
+        learning:
+          losses:
+            cross_entropy_expression:
+              weight: 1.0
+              input_key: predicted_logits_expression
+              output_key: gt_expression_label
+            cross_entropy_intensity:
+              weight: 1.0
+              input_key: predicted_logits_intensity
+              output_key: gt_expression_intensity
+          metrics: {}
+          learning_rate: 0.0001
+          optimizer: Adam
+          batching:
+            sequence_length_train: 150
+            sequence_length_val: 150
+            sequence_length_test: 150
+            batch_size_train: 16
+            batch_size_val: 16
+            batch_size_test: 1
+            num_gpus: 1
+            gpu_memory_min_gb: 35
+            log_every_n_steps: 50
+          early_stopping:
+            patience: 5
+          checkpoint_after_training: best
+          logger_type: WandbLogger
+          test_vis_frequency: 100
+        inout:
+          output_dir: false
+          full_run_dir: VideoEmotionAndIntensityClassifier
+          checkpoint_dir: VideoEmotionAndIntensityClassifier/checkpoints
+          name: VideoEmotionClassifier_MEADP__TSC_NPE_L_early
+          time: 2023_04_12_15-14-44
+          random_id: '6653765603916292046'
