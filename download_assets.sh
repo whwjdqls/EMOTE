@@ -21,18 +21,20 @@ while true; do
     esac
 done
 
-# echo "Downloading assets to run EMOTE..." 
+echo "Downloading assets to run EMOTE..." 
 
-# echo "Downloading FLAME related assets"
-# wget https://download.is.tue.mpg.de/emote/FLAME.zip -O FLAME.zip
-# echo "Extracting FLAME..."
-# ## unzip without overwriting existing files
-# unzip -n FLAME.zip
+cd models
+echo "Downloading FLAME related assets"
+wget https://download.is.tue.mpg.de/emote/FLAME.zip -O FLAME.zip --no-check-certificate
+echo "Extracting FLAME..."
+## unzip without overwriting existing files
+unzip -n FLAME.zip
 
-# echo "Downloading FLINT"
-# wget https://download.is.tue.mpg.de/emote/MotionPrior.zip 
-# echo "Extracting FLINT..."
-# unzip -n MotionPrior.zip
+echo "Downloading FLINT"
+wget https://download.is.tue.mpg.de/emote/MotionPrior.zip  --no-check-certificate
+echo "Extracting FLINT..."
+unzip -n MotionPrior.zip
+cd ..
 
 echo "Downloading static emotion feature extractor" 
 

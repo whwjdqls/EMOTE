@@ -21,6 +21,8 @@ main/wandb/
 *.npy
 externals/
 *.sh
+models/FLAME
+models/MotionPrior
 
 # Ignore IDE-specific files and directories
 .idea/
