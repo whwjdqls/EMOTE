@@ -2,13 +2,19 @@ EMOTE
 
 ---
 
-1. Add submodule for lip reading loss
+1. create conda environment by :
+
+```
+conda create --name <env> --file environmenets.txt
+```
+
+2. Add submodule for lip reading loss
 
 ```
 bash pull_submodeuls.sh
 ```
 
-2. Download assets for config, checkpoints
+3. Download assets for EMOTE, FLINT, lip reading model, video emotion recognition model
 
 ```
 bash download_assets.sh
