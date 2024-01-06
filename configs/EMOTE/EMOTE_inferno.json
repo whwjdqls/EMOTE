@@ -9,7 +9,7 @@
       "num_epochs": 100,
       "log_step": 20,
       "save_step" : 3,
-      "save_dir" : "/scratch/jungbin/Audio_face_data/checkpoints/EMOTE/MEAD"
+      "save_dir" : "/home/jisoo6687/checkpoints/EMOTE/MEAD"
     },
     "loss": {
       "lip_reading_loss": {
@@ -27,8 +27,8 @@
           },
           "model":{
             "v_fps":25,
-            "model_path":"../externals/spectre/data/LRS3_V_WER32.3/model.pth",
-            "model_conf":"../externals/spectre/data/LRS3_V_WER32.3/model.json"
+            "model_path":"externals/spectre/data/LRS3_V_WER32.3/model.pth",
+            "model_conf":"externals/spectre/data/LRS3_V_WER32.3/model.json"
           },
           "decode":{
             "beam_size":1,
@@ -186,8 +186,8 @@
       
     "data":{
       "dataset" : "MEAD",
-      "audio_dir" : "/scratch/jungbin/Audio_face_data/MEAD/Audio_samples",
-      "expression_dir" : "/scratch/jungbin/Audio_face_data/MEAD/Expression",
+      "audio_dir" : "/home/jisoo6687/talkinghead_dataset/MEAD/audio_sample",
+      "expression_dir" : "/home/jisoo6687/talkinghead_dataset/MEAD/flame_param",
       "window_size" : 20,
       "start_clip" : 0,
       "end_clip" : 0,
@@ -198,13 +198,13 @@
       "shape_params" : 100,
       "expression_params" : 50,
       "use_3D_translation" : true,
-      "static_landmark_embedding_path" : "../models/flame_models/flame_static_embedding.pkl",
-      "dynamic_landmark_embedding_path" : "../models/flame_models/flame_dynamic_embedding.npy",
-      "flame_model_path" : "../models/flame_models/generic_model.pkl"
+      "static_landmark_embedding_path" : "models/flame_models/flame_static_embedding.pkl",
+      "dynamic_landmark_embedding_path" : "models/flame_models/flame_dynamic_embedding.npy",
+      "flame_model_path" : "models/flame_models/generic_model.pkl"
     },
     "motionprior_config":{
-      "config_path" : "../configs/FLINT/FLINT_V1_MEAD.json",
-      "checkpoint_path" : "/workspace/audio2mesh/assets/MotionPrior/models/FLINT/checkpoints/model-epoch=0120-val/loss_total=0.131580308080.ckpt"
+      "config_path" : "configs/FLINT/FLINT_V1_MEAD.json",
+      "checkpoint_path" : "/home/jisoo6687/EMOTE/models/MotionPrior/models/FLINTv2/checkpoints/model-epoch=0758-val/loss_total=0.113977119327.ckpt"
     },
     "audio_config":{
       "model_specifier": "facebook/wav2vec2-base-960h" ,

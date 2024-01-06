@@ -189,9 +189,10 @@ class TalkingHeadDataset(data.Dataset):
         return len(self.inputs)
     
 class TalkingHeadDataset_new(data.Dataset):
-    def __init__(self, config, split='train'):
+    def __init__(self, config, full_length=False, split='train'):
         # split
         self.split = split
+        self.full_length = full_length
         config = config['data'] 
         self.config = config
         self.dataset = config['dataset']
@@ -328,6 +329,8 @@ class TalkingHeadDataset_new(data.Dataset):
                     continue
 
                 expression_feature = torch.tensor(param_dict['expression'], dtype=torch.float32) #(len, 50)
+                jaw_feature = torch.tensor(param_dict['jaw'], dtype=torch.float32) #(len,3)
+                param_feature = torch.cat([expression_feature, jaw_feature], dim=1)
 
                 audio_path = os.path.join(self.audio_dir, actor_name , uid + '.npy')
 
@@ -337,21 +340,21 @@ class TalkingHeadDataset_new(data.Dataset):
 
                 audio_samples = np.load(audio_path)
                 audio_samples = torch.tensor(audio_samples, dtype=torch.float32)
-                audio_samples = torch.squeeze(self.processor(audio_samples_lib, sampling_rate=16000, return_tensors="pt").input_values)
+                audio_samples = torch.squeeze(self.processor(audio_samples, sampling_rate=16000, return_tensors="pt").input_values)
                 
                 if self.full_length:
                     # full length audio
-                    self.inputs.append([audio_samples, expression_feature])
+                    self.inputs.append([audio_samples, param_feature])
                     self.labels.append([emotion, intensity, gender, actor_id])
                     continue
                 
                 for audio_start_, expression_start_ in zip(
                     range(audio_start, audio_samples.shape[0] - audio_window - audio_end, audio_stride),
-                    range(exp_start, expression_feature.shape[0] - exp_window - exp_end, exp_stride)
+                    range(exp_start, param_feature.shape[0] - exp_window - exp_end, exp_stride)
                 ):
                     audio_samples_slice = audio_samples[audio_start_:audio_start_+audio_window]
                     
-                    expression_samples_slice = expression_feature[expression_start_:expression_start_+exp_window]
+                    expression_samples_slice = param_feature[expression_start_:expression_start_+exp_window]
                     
                     if audio_samples_slice.shape[0] != audio_window or expression_samples_slice.shape[0] != exp_window:
                         continue

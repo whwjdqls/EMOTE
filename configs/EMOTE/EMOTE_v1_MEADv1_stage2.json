@@ -1,15 +1,15 @@
 {   
     "project_name": "EMOTE",
     "name": "v1_stage2_16",
-    "model_path": "../checkpoints/EMOTE",
+    "model_path": "checkpoints/EMOTE/v1_stage_1",
     "training": {
       "start_stage2": 0,
       "lr": 0.0001,
-      "batch_size": 30,
+      "batch_size": 20,
       "num_epochs": 20,
       "log_step": 10,
       "save_step" : 2,
-      "save_dir" : "../checkpoints/EMOTE"
+      "save_dir" : "checkpoints/EMOTE/v1_stage_2"
     },
     "loss": {
       "lip_reading_loss": {
@@ -27,8 +27,8 @@
           },
           "model":{
             "v_fps":25,
-            "model_path":"../externals/spectre/data/LRS3_V_WER32.3/model.pth",
-            "model_conf":"../externals/spectre/data/LRS3_V_WER32.3/model.json"
+            "model_path":"externals/spectre/data/LRS3_V_WER32.3/model.pth",
+            "model_conf":"externals/spectre/data/LRS3_V_WER32.3/model.json"
           },
           "decode":{
             "beam_size":1,
@@ -39,17 +39,155 @@
             "lm_weight":0.6
           }
         }
+      },
+      "emotion_video_loss": {
+        "weight": 2.5e-06,
+        "network_path": "models/VideoEmotionRecognition/models/VideoEmotionAndIntensityClassifier",
+        "use_real_video_for_reference": true,
+        "feature_extractor_path": "models/EmotionRecognition/image_based_networks/ResNet50",
+        "metric": "cosine_similarity",
+        "trainable": false,
+        "normalize_features": false,
+        "target_method_image": "EMICA_mead_mp_lr_mse_15",
+        "mask_invalid": "mediapipe_landmarks",
+        "cfg": {
+          "data": {
+            "data_class": "MEADPseudo3DDM",
+            "input_dir": "mead_25fps/resampled_videos",
+            "output_dir": "mead_25fps",
+            "processed_subfolder": "processed",
+            "num_workers": 8,
+            "image_size": 224,
+            "scale": 1.25,
+            "face_detector": "mediapipe",
+            "face_detector_threshold": 0.05,
+            "include_processed_audio": false,
+            "include_raw_audio": true,
+            "preload_videos": false,
+            "inflate_by_video_size": false,
+            "ring_type": "none",
+            "ring_size": "none",
+            "drop_last": true,
+            "training_sampler": "uniform",
+            "landmark_types": "mediapipe",
+            "landmark_sources": "original",
+            "segmentation_source": "aligned",
+            "split": "random_by_sequence_sorted_70_15_15",
+            "train_subjects": [],
+            "val_subjects": [],
+            "test_subjects": [],
+            "read_video": false,
+            "reconstruction_type": [
+              "emoca",
+              "spectre"
+            ],
+            "return_global_pose": false,
+            "return_appearance": true,
+            "average_shape_decode": true,
+            "emotion_type": "resnet50",
+            "return_emotion_feature": true,
+            "augmentation": []
+          },
+          "model": {
+            "pl_module_class": "VideoEmotionClassifier",
+            "max_epochs": 200,
+            "min_steps": 7000,
+            "input_feature_size": 2048,
+            "output": {
+              "num_classes": [
+                8,
+                3
+              ]
+            },
+            "sequence_encoder": {
+              "type": "TransformerSequenceClassifier",
+              "encoder": {
+                "type": "TransformerEncoder",
+                "num_layers": 1,
+                "feature_dim": 256,
+                "nhead": 8,
+                "dropout": 0.25,
+                "activation": "gelu",
+                "max_len": 600,
+                "positional_encoding": {
+                  "type": "none",
+                  "max_len": 600
+                },
+                "temporal_bias_type": "alibi_future"
+              },
+              "pooler": {
+                "type": "TransformerPooler",
+                "hidden_size": 20
+              },
+              "temporal_bias_type": false
+            },
+            "classification_head": {
+              "type": "MultiheadLinearClassificationHead",
+              "dropout_prob": 0.2,
+              "category_names": [
+                "expression",
+                "intensity"
+              ]
+            },
+            "feature_extractor": {
+              "type": false
+            },
+            "resume_training": false
+          },
+          "learning": {
+            "losses": {
+              "cross_entropy_expression": {
+                "weight": 1.0,
+                "input_key": "predicted_logits_expression",
+                "output_key": "gt_expression_label"
+              },
+              "cross_entropy_intensity": {
+                "weight": 1.0,
+                "input_key": "predicted_logits_intensity",
+                "output_key": "gt_expression_intensity"
+              }
+            },
+            "metrics": {},
+            "learning_rate": 0.0001,
+            "optimizer": "Adam",
+            "batching": {
+              "sequence_length_train": 150,
+              "sequence_length_val": 150,
+              "sequence_length_test": 150,
+              "batch_size_train": 16,
+              "batch_size_val": 16,
+              "batch_size_test": 1,
+              "num_gpus": 1,
+              "gpu_memory_min_gb": 35,
+              "log_every_n_steps": 50
+            },
+            "early_stopping": {
+              "patience": 5
+            },
+            "checkpoint_after_training": "best",
+            "logger_type": "WandbLogger",
+            "test_vis_frequency": 100
+          },
+          "inout": {
+            "output_dir": false,
+            "full_run_dir": "VideoEmotionAndIntensityClassifier",
+            "checkpoint_dir": "VideoEmotionAndIntensityClassifier/checkpoints",
+            "name": "VideoEmotionClassifier_MEADP__TSC_NPE_L_early",
+            "time": "2023_04_12_15-14-44",
+            "random_id": "6653765603916292046"
+          }
+        }
       }
 
     },
     "validation":{
-      "batch_size" : 30
+      "batch_size" : 20
     },
       
     "data":{
       "dataset" : "MEAD",
-      "audio_dir" : "/mnt/storage/MEAD/audio_sample_v1",
-      "expression_dir" : "/mnt/storage/MEAD/flame_param",
+      "audio_dir" : "/home/jisoo6687/talkinghead_dataset/MEAD/audio_sample",
+      "expression_dir" : "/home/jisoo6687/talkinghead_dataset/MEAD/flame_param",
       "window_size" : 16,
       "start_clip" : 0,
       "end_clip" : 0,
@@ -60,13 +198,13 @@
       "shape_params" : 100,
       "expression_params" : 50,
       "use_3D_translation" : true,
-      "static_landmark_embedding_path" : "../models/flame_models/flame_static_embedding.pkl",
-      "dynamic_landmark_embedding_path" : "../models/flame_models/flame_dynamic_embedding.npy",
-      "flame_model_path" : "../models/flame_models/generic_model.pkl"
+      "static_landmark_embedding_path" : "models/flame_models/flame_static_embedding.pkl",
+      "dynamic_landmark_embedding_path" : "models/flame_models/flame_dynamic_embedding.npy",
+      "flame_model_path" : "models/flame_models/generic_model.pkl"
     },
     "motionprior_config":{
-      "config_path" : "../configs/FLINT/FLINT_V1_MEADv1.json",
-      "checkpoint_path" : "../checkpoints/FLINT/v1/TVAE_66.pth"
+      "config_path" : "configs/FLINT/FLINT_V1_MEADv1.json",
+      "checkpoint_path" : "/home/jisoo6687/EMOTE/models/MotionPrior/models/FLINTv2/checkpoints/model-epoch=0758-val/loss_total=0.113977119327.ckpt"
     },
     "audio_config":{
       "model_specifier": "facebook/wav2vec2-base-960h" ,

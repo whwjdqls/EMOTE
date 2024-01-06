@@ -23,6 +23,7 @@ externals/
 *.sh
 models/FLAME
 models/MotionPrior
+wandb/
 
 # Ignore IDE-specific files and directories
 .idea/

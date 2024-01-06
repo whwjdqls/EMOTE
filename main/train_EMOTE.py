@@ -9,7 +9,9 @@ import numpy as np
 import torch
 import wandb
 
-from datasets import dataset
+sys.path.append('.')
+# from datasets import dataset
+# from datasets import talkingheaddataset
 from datasets import talkingheaddataset
 
 from models import TVAE_inferno, EMOTE_inferno
@@ -21,6 +23,8 @@ from utils.our_renderer import get_texture_from_template, render_flame, to_lip_r
 from torchvision import transforms
 # from utils.loss import LipReadingLoss
 import time
+from tqdm import tqdm
+
 def list_to(list_,device):
     """move a list of tensors to device
     """
@@ -60,7 +64,8 @@ def train_one_epoch(config,FLINT_config, epoch, model, FLAME, optimizer, data_lo
     # video_emotion_model = None
 
     epoch_start = time.time()
-    for i, data_label in enumerate(data_loader):
+    for i, data_label in enumerate(tqdm(data_loader, desc="Processing", unit="step")) :
+    # for i, data_label in enumerate(data_loader):
         forward_start = time.time()
         data, label = data_label # [data (audio, flame_param), label]
         audio, flame_param = list_to(data, device) # (BS, T / 30 * 16000), (BS, T, 53)
@@ -87,7 +92,7 @@ def train_one_epoch(config,FLINT_config, epoch, model, FLAME, optimizer, data_lo
         if epoch >= config["training"]["start_stage2"]: # second stage (disentanglement / differential rendering)
             if textures is None: # load texture only once
                 textures = get_texture_from_template( # this should be configged later
-                    '../models/flame_models/geometry/head_template.obj', device).extend(BS*T)
+                    'models/flame_models/geometry/head_template.obj', device).extend(BS*T)
                 faces = torch.tensor(FLAME.faces.astype(np.int64)).repeat(BS*T,1,1).to(device)
 
             #  12-06 is reshaping okay?
@@ -184,7 +189,8 @@ def val_one_epoch(config,FLINT_config, epoch, model, FLAME, data_loader, device)
     lip_reading_model = None
     faces = None
     with torch.no_grad():
-        for i, data_label in enumerate(data_loader):
+        for i, data_label in enumerate(tqdm(data_loader, desc="Processing", unit="step")) :
+        # for i, data_label in enumerate(data_loader):
             data, label = data_label
             # so many to(device) calls.. made a list_to function
             audio, flame_param = list_to(data, device)
@@ -211,7 +217,7 @@ def val_one_epoch(config,FLINT_config, epoch, model, FLAME, data_loader, device)
             # 12-10 Mabye we should load all the models in the main() function
                 if textures is None: # load texture only once
                     textures = get_texture_from_template( # this should be configged later
-                        '../models/flame_models/geometry/head_template.obj', device).extend(BS*T)
+                        'models/flame_models/geometry/head_template.obj', device).extend(BS*T)
                     faces = torch.tensor(FLAME.faces.astype(np.int64)).repeat(BS*T,1,1).to(device)
 
                 #  12-06 is reshaping okay?
@@ -405,8 +411,10 @@ def main(args, config):
 
     print("Loading Dataset...")
     # train_dataset = talkingheaddataset.TalkingHeadDataset_new(config, split='train')
+    # train_dataset = talkingheaddataset.TalkingHeadDataset_new(config, split='debug')
     train_dataset = talkingheaddataset.TalkingHeadDataset_new(config, split='debug')
 
+    # val_dataset = talkingheaddataset.TalkingHeadDataset_new(config, split='val')
     val_dataset = talkingheaddataset.TalkingHeadDataset_new(config, split='val')
     print('val_dataset', len(val_dataset),'| train_dataset', len(train_dataset))
     
