@@ -47,6 +47,15 @@ def label_to_condition_MEAD(config, emotion, intensity, actor_id):
         actor_id, num_classes=class_num_dict["n_identities"]) # all actors
     condition = torch.cat([emotion_one_hot, intensity_one_hot, actor_id_one_hot], dim=-1) # (BS, 50)
     return condition.to(torch.float32)
+
+def swap_conditions(original_batch) :
+    batch_size, parameter_size, condition_size = original_batch.shape
+
+    reshaped_batch = original_batch.view(batch_size, parameter_size, condition_size // 2, 2)
+
+    swapped_batch = reshaped_batch.permute(0, 1, 3, 2).contiguous().view(batch_size, parameter_size, condition_size)
+
+    return swapped_batch
     
     
     
@@ -74,6 +83,20 @@ def train_one_epoch(config,FLINT_config, epoch, model, FLAME, optimizer, data_lo
         emotion, intensity, gender, actor_id = list_to(label, device)
         condition = label_to_condition_MEAD(config, emotion, intensity, actor_id)
         params_pred = model(audio, condition) # batch, seq_len, 53
+
+        # swap condition for disentanglement loss
+        if epoch >= config["training"]["start_stage2"]:
+            condition_size = condition.shape
+            swapped_condition = condition.view(condition_size // 2, 2)
+            swapped_condition = swapped_condition[:,:,[1,0]].view(condition_size)
+            print(f'swapped_condition : {swapped_condition.shape}')
+            swapped_params_pred = model(audio, swapped_condition)
+
+            swapped_exp_param_pred = swapped_params_pred[:,:,50].to(device)
+            swapped_jaw_pose_pred = swapped_params_pred[:,:,50].to(device)
+
+            swapped_vertices_pred = flame.get_vertices_from_flame(
+                FLINT_config, FLAME, swapped_exp_param_pred, swapped_jaw_pose_pred, device) # (BS, T, 15069)
 
         exp_param_pred = params_pred[:,:,:50].to(device)
         jaw_pose_pred = params_pred[:,:,50:53].to(device)

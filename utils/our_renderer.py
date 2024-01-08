@@ -85,7 +85,8 @@ def render_flame(config, vertices, faces, textures, device):
     renderer = MeshRenderer(
         rasterizer=MeshRasterizer(
             cameras=cameras,
-            raster_settings=raster_settings
+            raster_settings=raster_settings,
+            bin_size=0
         ),
         shader=SoftPhongShader(
             device=device, 

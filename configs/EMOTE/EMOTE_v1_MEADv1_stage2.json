@@ -1,7 +1,7 @@
 {   
     "project_name": "EMOTE",
     "name": "v1_stage2_16",
-    "model_path": "checkpoints/EMOTE/v1_stage_1",
+    "model_path": "checkpoints/EMOTE/MEAD/v1_stage_1",
     "training": {
       "start_stage2": 0,
       "lr": 0.0001,
@@ -9,7 +9,7 @@
       "num_epochs": 20,
       "log_step": 10,
       "save_step" : 2,
-      "save_dir" : "checkpoints/EMOTE/v1_stage_2"
+      "save_dir" : "checkpoints/EMOTE/MEAD/v1_stage_2"
     },
     "loss": {
       "lip_reading_loss": {
